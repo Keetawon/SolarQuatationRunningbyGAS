@@ -314,10 +314,24 @@
                     </div>
                 </div>
 
-                <!-- Edit Mode Indicator -->
+                <!-- Edit Mode Indicator (Draft) -->
                 <div class="alert alert-info d-none mb-3 d-flex justify-content-between align-items-center" id="q_editIndicator" style="border-radius: 12px;">
-                    <span>✏️ <strong>กำลังแก้ไข:</strong> <span id="q_editingId"></span></span>
+                    <span>✏️ <strong>กำลังแก้ไขฉบับร่าง:</strong> <span id="q_editingId"></span></span>
                     <button class="btn btn-sm btn-outline-secondary" onclick="resetQuotationForm()">ยกเลิกการแก้ไข</button>
+                </div>
+
+                <!-- Locked Mode Banner (Sent quotation) -->
+                <div class="alert d-none mb-3 p-4" id="q_lockedBanner" style="border-radius: 12px; background: #fff3e0; border: 2px solid #ff9800;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1" style="color: #e65100;">🔒 ใบเสนอราคานี้ถูกส่งแล้ว — ไม่สามารถแก้ไขได้</h5>
+                            <p class="mb-0 text-muted">เลขที่: <strong id="q_lockedId"></strong> | หากลูกค้าต้องการแก้ไข ให้สร้างฉบับแก้ไขใหม่</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a id="q_lockedPdfLink" href="#" target="_blank" class="btn btn-sm btn-outline-warning">📄 เปิด PDF เดิม</a>
+                            <button class="btn btn-sm btn-warning fw-bold px-4" onclick="createRevision()">📝 สร้างฉบับแก้ไข</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Step 1: Customer Info -->
@@ -1024,6 +1038,47 @@
             input.setAttribute('data-selected-id', id);
             document.getElementById('q_draftSuggestions').classList.add('d-none');
         }
+
+        function fillQuotationFields(d) {
+            document.getElementById('q_prefix').value = d.prefix || '';
+            document.getElementById('q_fName').value = d.fName || '';
+            document.getElementById('q_lName').value = d.lName || '';
+            document.getElementById('q_phone').value = d.phone || '';
+            document.getElementById('q_email').value = d.email || '';
+            document.getElementById('q_tax').value = d.taxId || '';
+            document.getElementById('q_project').value = d.project || '';
+            document.getElementById('q_leadId').value = d.leadId || '';
+            document.getElementById('q_bookingId').value = d.refBookingId || '';
+
+            document.getElementById('q_house').value = d.houseNo || '';
+            document.getElementById('q_street').value = d.street || '';
+            document.getElementById('q_prov').value = d.province || '';
+            document.getElementById('q_prov').dispatchEvent(new Event('change'));
+            document.getElementById('q_dist').value = d.district || '';
+            document.getElementById('q_dist').dispatchEvent(new Event('change'));
+            document.getElementById('q_subdist').value = d.subDistrict || '';
+            document.getElementById('q_zip').value = d.zipcode || '';
+
+            document.getElementById('q_sysName').value = d.systemName || '';
+            document.getElementById('q_detail').value = d.systemDetail || '';
+
+            document.getElementById('q_total').value = d.grandTotal || '';
+            calcQTax();
+
+            document.getElementById('q_valid').value = d.validityDays || 15;
+            calcValidityDate();
+            document.getElementById('q_sname').value = d.salesName || '';
+            document.getElementById('q_sphone').value = d.salesPhone || '';
+        }
+
+        function setFormLocked(locked) {
+            var ids = ['q_prefix','q_fName','q_lName','q_phone','q_email','q_tax','q_project',
+                'q_leadId','q_bookingId','q_house','q_street','q_prov','q_dist','q_subdist','q_zip',
+                'q_sysName','q_detail','q_total','q_valid','q_validDate','q_sname','q_sphone'];
+            ids.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.disabled = locked;
+            });
         }
 
         function loadDraftQuotation() {
@@ -1037,52 +1092,59 @@
                 .withSuccessHandler(function(d) {
                     hideLoading();
                     if (d && !d.error) {
-                        window.q_data.quotationId = d.quotationId;
-                        window.q_data.existingPdfUrl = d.pdfUrl;
-
-                        document.getElementById('q_prefix').value = d.prefix || '';
-                        document.getElementById('q_fName').value = d.fName || '';
-                        document.getElementById('q_lName').value = d.lName || '';
-                        document.getElementById('q_phone').value = d.phone || '';
-                        document.getElementById('q_email').value = d.email || '';
-                        document.getElementById('q_tax').value = d.taxId || '';
-                        document.getElementById('q_project').value = d.project || '';
-                        document.getElementById('q_leadId').value = d.leadId || '';
-                        document.getElementById('q_bookingId').value = d.refBookingId || '';
-
-                        document.getElementById('q_house').value = d.houseNo || '';
-                        document.getElementById('q_street').value = d.street || '';
-                        document.getElementById('q_prov').value = d.province || '';
-                        document.getElementById('q_prov').dispatchEvent(new Event('change'));
-                        document.getElementById('q_dist').value = d.district || '';
-                        document.getElementById('q_dist').dispatchEvent(new Event('change'));
-                        document.getElementById('q_subdist').value = d.subDistrict || '';
-                        document.getElementById('q_zip').value = d.zipcode || '';
-
-                        document.getElementById('q_sysName').value = d.systemName || '';
-                        document.getElementById('q_detail').value = d.systemDetail || '';
-
-                        document.getElementById('q_total').value = d.grandTotal || '';
-                        calcQTax();
-
-                        document.getElementById('q_valid').value = d.validityDays || 15;
-                        calcValidityDate();
-                        document.getElementById('q_sname').value = d.salesName || '';
-                        document.getElementById('q_sphone').value = d.salesPhone || '';
-
-                        document.getElementById('q_editIndicator').classList.remove('d-none');
-                        document.getElementById('q_editingId').textContent = d.quotationId;
+                        fillQuotationFields(d);
                         document.getElementById('q_successBox').classList.add('d-none');
-                        document.getElementById('q_btnRow').classList.remove('d-none');
+
+                        var isSent = (d.status === 'ออกใบเสนอราคาแล้ว');
+
+                        if (isSent) {
+                            // Locked mode — sent quotation
+                            setFormLocked(true);
+                            document.getElementById('q_lockedBanner').classList.remove('d-none');
+                            document.getElementById('q_lockedId').textContent = d.quotationId;
+                            document.getElementById('q_lockedPdfLink').href = d.pdfUrl || '#';
+                            document.getElementById('q_editIndicator').classList.add('d-none');
+                            document.getElementById('q_btnRow').classList.add('d-none');
+                            window.q_data.quotationId = d.quotationId;
+                            window.q_data.existingPdfUrl = d.pdfUrl;
+                            window._lockedData = d;
+                        } else {
+                            // Edit mode — draft
+                            setFormLocked(false);
+                            document.getElementById('q_lockedBanner').classList.add('d-none');
+                            document.getElementById('q_editIndicator').classList.remove('d-none');
+                            document.getElementById('q_editingId').textContent = d.quotationId;
+                            document.getElementById('q_btnRow').classList.remove('d-none');
+                            window.q_data.quotationId = d.quotationId;
+                            window.q_data.existingPdfUrl = d.pdfUrl;
+                        }
                     } else { alert("ไม่พบข้อมูลใบเสนอราคา"); }
                 })
                 .withFailureHandler(function(err) { hideLoading(); alert('เกิดข้อผิดพลาด: ' + err.message); })
                 .searchQuotationData(id);
         }
 
+        // ==================== Create Revision ====================
+        function createRevision() {
+            var d = window._lockedData;
+            if (!d) return;
+            setFormLocked(false);
+            document.getElementById('q_lockedBanner').classList.add('d-none');
+            document.getElementById('q_editIndicator').classList.remove('d-none');
+            document.getElementById('q_editingId').textContent = 'ฉบับใหม่ (จาก ' + d.quotationId + ')';
+            document.getElementById('q_btnRow').classList.remove('d-none');
+
+            // New quotation — clear IDs so it gets a fresh one
+            window.q_data = { quotationId: '', existingPdfUrl: '' };
+
+            // Keep refBookingId pointing to original
+            document.getElementById('q_bookingId').value = d.quotationId;
+        }
+
         // ==================== Reset Quotation Form ====================
         function resetQuotationForm() {
             window.q_data = { quotationId: '', existingPdfUrl: '' };
+            window._lockedData = null;
 
             ['q_prefix','q_fName','q_lName','q_phone','q_email','q_tax','q_project',
              'q_leadId','q_bookingId','q_house','q_street','q_sysName','q_detail',
@@ -1100,7 +1162,9 @@
             document.getElementById('q_valid').value = '15';
             calcValidityDate();
 
+            setFormLocked(false);
             document.getElementById('q_editIndicator').classList.add('d-none');
+            document.getElementById('q_lockedBanner').classList.add('d-none');
             document.getElementById('q_successBox').classList.add('d-none');
             document.getElementById('q_btnRow').classList.remove('d-none');
 
