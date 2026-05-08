@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province.json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_amphure.json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_tambon.json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json\")",
+      "Bash(curl -s \"https://api.github.com/repos/kongvut/thai-province-data\")",
+      "Bash(curl -s \"https://api.github.com/repos/kongvut/thai-province-data/contents\")",
+      "Bash(curl -s \"https://api.github.com/repos/kongvut/thai-province-data/contents/api\")",
+      "Bash(curl -s \"https://api.github.com/repos/kongvut/thai-province-data/contents/api/latest\")",
+      "Bash(curl -s \"https://api.github.com/repos/kongvut/thai-province-data/contents/api/v1\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/province.json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/amphure.json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/tambon.json\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/province_with_amphure_tambon.json\")",
+      "Bash(python -c ' *)",
+      "WebSearch"
+    ]
+  }
+}
