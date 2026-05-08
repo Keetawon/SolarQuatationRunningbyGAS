@@ -304,10 +304,27 @@ function processBooking(formData, createPdfFlag) {
 
 // ------------------- ใบเสนอราคา PDF -------------------
 
-function processQuotation(formData) {
+function processQuotation(formData, createPdfFlag) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ข้อมูลใบเสนอราคา');
-    var quotationId = generateRunningID('ข้อมูลใบเสนอราคา', 'SMQT');
+    var quotationId = formData.quotationId;
+    var isUpdate = false;
+    var rowIndex = -1;
+
+    if (quotationId) {
+      var existing = sheet.getDataRange().getValues();
+      for (var i = 1; i < existing.length; i++) {
+        if (existing[i][0] === quotationId) {
+          isUpdate = true;
+          rowIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (!isUpdate) {
+      quotationId = generateRunningID('ข้อมูลใบเสนอราคา', 'SMQT');
+    }
 
     var grandTotal = parseFloat(formData.grandTotal) || 0;
     var subtotal = grandTotal / 1.07;
@@ -318,59 +335,115 @@ function processQuotation(formData) {
     validityDate.setDate(validityDate.getDate() + validityDays);
     var validityDateStr = Utilities.formatDate(validityDate, Session.getScriptTimeZone(), "dd/MM/yyyy");
 
-    // --- PDF ---
-    var folder = DriveApp.getFolderById(getConfig('QUOTATION_FOLDER_ID'));
-    var tempFile = DriveApp.getFileById(getConfig('QUOTATION_TEMPLATE_ID')).makeCopy(quotationId + ' - ใบเสนอราคา - ' + formData.fName, folder);
-    var tempDoc = DocumentApp.openById(tempFile.getId());
-    var body = tempDoc.getBody();
+    var pdfUrl = formData.existingPdfUrl || "-";
+    var status = "บันทึกแบบร่าง";
 
-    var todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy");
-    var address = [formData.houseNo, formData.street, formData.subDistrict, formData.district, formData.province, formData.zipcode].join(' ').trim();
+    if (createPdfFlag) {
+      var folder = DriveApp.getFolderById(getConfig('QUOTATION_FOLDER_ID'));
+      var tempFile = DriveApp.getFileById(getConfig('QUOTATION_TEMPLATE_ID')).makeCopy(quotationId + ' - ใบเสนอราคา - ' + formData.fName, folder);
+      var tempDoc = DocumentApp.openById(tempFile.getId());
+      var body = tempDoc.getBody();
 
-    body.replaceText('{{quotation_id}}', quotationId);
-    body.replaceText('{{date}}', todayStr);
-    body.replaceText('{{project_name}}', formData.project || '-');
-    body.replaceText('{{customer_name}}', formData.prefix + ' ' + formData.fName + ' ' + formData.lName);
-    body.replaceText('{{phone}}', formData.phone);
-    body.replaceText('{{email}}', formData.email || '-');
-    body.replaceText('{{tax_id}}', formData.taxId || '-');
-    body.replaceText('{{address}}', address);
-    body.replaceText('{{sales_name}}', formData.salesName);
-    body.replaceText('{{sales_phone}}', formData.salesPhone);
-    body.replaceText('{{system_name}}', formData.systemName || '-');
-    body.replaceText('{{system_detail}}', formData.systemDetail || '-');
-    body.replaceText('{{subtotal}}', subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    body.replaceText('{{vat}}', vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    body.replaceText('{{grand_total}}', grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    body.replaceText('{{grand_total_thaitext}}', thaiBahtText(grandTotal));
-    body.replaceText('{{validity_date}}', validityDateStr);
+      var todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy");
+      var address = [formData.houseNo, formData.street, formData.subDistrict, formData.district, formData.province, formData.zipcode].join(' ').trim();
+
+      body.replaceText('{{quotation_id}}', quotationId);
+      body.replaceText('{{date}}', todayStr);
+      body.replaceText('{{project_name}}', formData.project || '-');
+      body.replaceText('{{customer_name}}', formData.prefix + ' ' + formData.fName + ' ' + formData.lName);
+      body.replaceText('{{phone}}', formData.phone);
+      body.replaceText('{{email}}', formData.email || '-');
+      body.replaceText('{{tax_id}}', formData.taxId || '-');
+      body.replaceText('{{address}}', address);
+      body.replaceText('{{sales_name}}', formData.salesName);
+      body.replaceText('{{sales_phone}}', formData.salesPhone);
+      body.replaceText('{{system_name}}', formData.systemName || '-');
+      body.replaceText('{{system_detail}}', formData.systemDetail || '-');
+      body.replaceText('{{subtotal}}', subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      body.replaceText('{{vat}}', vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      body.replaceText('{{grand_total}}', grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      body.replaceText('{{grand_total_thaitext}}', thaiBahtText(grandTotal));
+      body.replaceText('{{validity_date}}', validityDateStr);
+
+      var userLog = "-"; try { userLog = Session.getActiveUser().getEmail(); } catch (e) { }
+      body.replaceText('{{sales_email}}', userLog);
+
+      tempDoc.saveAndClose();
+      var pdfFile = folder.createFile(tempFile.getAs(MimeType.PDF)).setName(tempFile.getName() + '.pdf');
+      tempFile.setTrashed(true);
+      pdfUrl = pdfFile.getUrl();
+      status = "ออกใบเสนอราคาแล้ว";
+    }
 
     var userLog = "-"; try { userLog = Session.getActiveUser().getEmail(); } catch (e) { }
-    body.replaceText('{{sales_email}}', userLog);
 
-    tempDoc.saveAndClose();
-    var pdfFile = folder.createFile(tempFile.getAs(MimeType.PDF)).setName(tempFile.getName() + '.pdf');
-    tempFile.setTrashed(true);
-    var pdfUrl = pdfFile.getUrl();
-
-    // --- Sheet (29 columns) ---
-    sheet.appendRow([
+    var rowData = [
       quotationId, new Date(), formData.refBookingId, formData.leadId,
       formData.prefix, formData.fName, formData.lName, formData.phone, formData.email, formData.taxId,
       formData.project, formData.houseNo, formData.street, formData.subDistrict, formData.district, formData.province, formData.zipcode,
       formData.systemName, formData.systemDetail,
       parseFloat(subtotal.toFixed(2)), parseFloat(vat.toFixed(2)), parseFloat(grandTotal.toFixed(2)),
       validityDays, validityDateStr,
-      formData.salesName, formData.salesPhone, userLog, pdfUrl, 'ออกใบเสนอราคาแล้ว'
-    ]);
+      formData.salesName, formData.salesPhone, userLog, pdfUrl, status
+    ];
 
-    // Force text format on columns that look like numbers
-    var qLastRow = sheet.getLastRow();
-    sheet.getRange(qLastRow, 7).setNumberFormat('@');   // Phone
-    sheet.getRange(qLastRow, 9).setNumberFormat('@');   // Tax_ID
-    sheet.getRange(qLastRow, 17).setNumberFormat('@');  // Postcode
-    sheet.getRange(qLastRow, 26).setNumberFormat('@');  // Sales_Phone
+    if (isUpdate) {
+      sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+
+    var targetRow = isUpdate ? rowIndex : sheet.getLastRow();
+    sheet.getRange(targetRow, 7).setNumberFormat('@');   // Phone
+    sheet.getRange(targetRow, 9).setNumberFormat('@');   // Tax_ID
+    sheet.getRange(targetRow, 17).setNumberFormat('@');  // Postcode
+    sheet.getRange(targetRow, 26).setNumberFormat('@');  // Sales_Phone
 
     return { status: 'success', quotationId: quotationId, pdfUrl: pdfUrl };
   } catch (e) { return { status: 'error', message: e.message }; }
+}
+
+function searchQuotationData(quotationId) {
+  if (!quotationId) return null;
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ข้อมูลใบเสนอราคา');
+    if (!sheet) return null;
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toString().trim() === quotationId.trim()) {
+        return {
+          quotationId: data[i][0], date: data[i][1],
+          refBookingId: data[i][2], leadId: data[i][3],
+          prefix: data[i][4], fName: data[i][5], lName: data[i][6],
+          phone: data[i][7], email: data[i][8], taxId: data[i][9],
+          project: data[i][10], houseNo: data[i][11], street: data[i][12],
+          subDistrict: data[i][13], district: data[i][14], province: data[i][15], zipcode: data[i][16],
+          systemName: data[i][17], systemDetail: data[i][18],
+          subtotal: data[i][19], vat: data[i][20], grandTotal: data[i][21],
+          validityDays: data[i][22], validityDateStr: data[i][23],
+          salesName: data[i][24], salesPhone: data[i][25],
+          userLog: data[i][26], pdfUrl: data[i][27], status: data[i][28]
+        };
+      }
+    }
+    return null;
+  } catch (e) { return { error: "ไม่พบข้อมูลใบเสนอราคา" }; }
+}
+
+function getQuotationList() {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ข้อมูลใบเสนอราคา');
+    if (!sheet) return [];
+    var data = sheet.getDataRange().getValues();
+    return data.slice(1).map(function(row) {
+      var id = row[0] ? row[0].toString().trim() : '';
+      var name = (row[5] || '') + ' ' + (row[6] || '');
+      var project = row[10] || '';
+      var status = row[28] || '';
+      return {
+        id: id,
+        displayText: id + ' — ' + name + ' | ' + project + ' | ' + status
+      };
+    }).filter(function(q) { return q.id; });
+  } catch (e) { return []; }
 }

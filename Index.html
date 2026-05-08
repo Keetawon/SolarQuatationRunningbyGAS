@@ -203,7 +203,7 @@
     <div class="container" style="max-width: 900px;">
 
 
-        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <ul class="nav nav-tabs mb-4 d-none" id="myTab" role="tablist">
             <li class="nav-item" role="presentation"><button class="nav-link active" id="booking-tab"
                     data-bs-toggle="tab" data-bs-target="#booking" type="button" role="tab">📑 ระบบออกใบจอง</button>
             </li>
@@ -214,7 +214,7 @@
         <div class="tab-content" id="myTabContent">
 
             <!-- ==================== TAB: ใบจอง ==================== -->
-            <div class="tab-pane fade show active" id="booking" role="tabpanel">
+            <div class="tab-pane fade" id="booking" role="tabpanel">
                 <div class="alert alert-edit mb-4 p-3 shadow-sm d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center flex-grow-1">
                         <strong class="me-3">📝 เปิดแบบร่างเดิม:</strong>
@@ -296,65 +296,132 @@
             </div>
 
             <!-- ==================== TAB: ใบเสนอราคา ==================== -->
-            <div class="tab-pane fade" id="quotation" role="tabpanel">
+            <div class="tab-pane fade show active" id="quotation" role="tabpanel">
 
-                <!-- Step 1: Search Booking -->
-                <div class="card p-4 bg-white" style="border-top: 5px solid #0d6efd !important;">
-                    <h5 class="card-title-custom" style="color: #0d6efd; border-color: #0d6efd;">ดึงข้อมูลจากใบจอง</h5>
-                    <div class="position-relative mb-3">
-                        <input type="text" id="q_search" class="form-control form-control-lg shadow-sm"
-                            placeholder="🔍 พิมพ์รหัสใบจอง หรือ ชื่อลูกค้า..."
-                            oninput="filterBookings(this.value)" autocomplete="off">
-                        <div id="q_suggestions" class="list-group position-absolute w-100 shadow-lg d-none"
-                            style="z-index: 1000; max-height: 250px; overflow-y: auto; border-radius: 12px; margin-top: 5px;">
+                <!-- Draft Edit Bar -->
+                <div class="alert alert-edit mb-4 p-3 shadow-sm" id="q_editBar">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center flex-grow-1 position-relative">
+                            <strong class="me-3">📝 เปิดแบบร่างเดิม:</strong>
+                            <input type="text" id="q_editSearch" class="form-control form-control-sm me-2"
+                                style="max-width: 300px;" placeholder="พิมพ์รหัส หรือ ชื่อลูกค้า..."
+                                oninput="filterQuotations(this.value)" autocomplete="off">
+                            <div id="q_draftSuggestions" class="list-group position-absolute shadow-lg d-none"
+                                style="z-index: 1000; max-height: 250px; overflow-y: auto; border-radius: 12px; margin-top: 5px; top: 100%; left: 130px; width: 500px;">
+                            </div>
                         </div>
+                        <button class="btn btn-sm btn-warning fw-bold px-4" onclick="loadDraftQuotation()" id="q_btnLoadDraft">ดึงข้อมูล</button>
                     </div>
-                    <div id="q_customerInfo" class="q-step-hidden">
-                        <div class="row g-2">
-                            <div class="col-md-5"><small class="text-muted">ชื่อลูกค้า</small><input type="text" id="q_name" class="form-control bg-light" readonly></div>
-                            <div class="col-md-3"><small class="text-muted">เบอร์โทร</small><input type="text" id="q_phone" class="form-control bg-light" readonly></div>
-                            <div class="col-md-4"><small class="text-muted">อีเมล</small><input type="text" id="q_email" class="form-control bg-light" readonly></div>
-                            <div class="col-md-3"><small class="text-muted">เลขผู้เสียภาษี</small><input type="text" id="q_tax" class="form-control bg-light" readonly></div>
-                            <div class="col-md-4"><small class="text-muted">โครงการ</small><input type="text" id="q_project" class="form-control bg-light" readonly></div>
-                            <div class="col-md-2"><small class="text-muted">Lead ID</small><input type="text" id="q_leadId" class="form-control bg-light" readonly></div>
-                            <div class="col-md-3"><small class="text-muted">Booking ID</small><input type="text" id="q_bookingId" class="form-control bg-light" readonly></div>
+                </div>
+
+                <!-- Edit Mode Indicator -->
+                <div class="alert alert-info d-none mb-3 d-flex justify-content-between align-items-center" id="q_editIndicator" style="border-radius: 12px;">
+                    <span>✏️ <strong>กำลังแก้ไข:</strong> <span id="q_editingId"></span></span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="resetQuotationForm()">ยกเลิกการแก้ไข</button>
+                </div>
+
+                <!-- Step 1: Customer Info -->
+                <div class="card p-4 bg-white" style="border-top: 5px solid var(--ocean-main) !important;">
+                    <h5 class="card-title-custom">① ข้อมูลลูกค้า</h5>
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label text-secondary fw-bold">คำนำหน้า <span class="text-danger">*</span></label>
+                            <select id="q_prefix" class="form-select">
+                                <option value="">-- เลือก --</option>
+                                <option value="นาย">นาย</option>
+                                <option value="นาง">นาง</option>
+                                <option value="นางสาว">นางสาว</option>
+                                <option value="Mr.">Mr.</option>
+                                <option value="Ms.">Ms.</option>
+                            </select>
+                            <div class="invalid-feedback">กรุณาเลือกคำนำหน้า</div>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label text-secondary fw-bold">ชื่อ <span class="text-danger">*</span></label>
+                            <input type="text" id="q_fName" class="form-control" placeholder="ชื่อจริง">
+                            <div class="invalid-feedback">กรุณากรอกชื่อ</div>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label text-secondary fw-bold">นามสกุล</label>
+                            <input type="text" id="q_lName" class="form-control" placeholder="นามสกุล">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary fw-bold">เบอร์ติดต่อ <span class="text-danger">*</span></label>
+                            <input type="tel" id="q_phone" class="form-control" placeholder="0XX-XXX-XXXX" maxlength="10">
+                            <div class="invalid-feedback">เบอร์โทรไม่ถูกต้อง (ต้อง 9-10 หลัก ขึ้นต้นด้วย 0)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary fw-bold">อีเมล</label>
+                            <input type="email" id="q_email" class="form-control" placeholder="example@mail.com">
+                            <div class="invalid-feedback">รูปแบบอีเมลไม่ถูกต้อง</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary fw-bold">เลขผู้เสียภาษี</label>
+                            <input type="text" id="q_tax" class="form-control" placeholder="10 หรือ 13 หลัก" maxlength="13">
+                            <div class="invalid-feedback">เลขผู้เสียภาษีไม่ถูกต้อง (ต้อง 10 หรือ 13 หลัก)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary fw-bold">โครงการ</label>
+                            <input type="text" id="q_project" class="form-control" placeholder="ชื่อโครงการ">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted">Lead ID</label>
+                            <input type="text" id="q_leadId" class="form-control" placeholder="(ถ้ามี)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted">Booking ID (อ้างอิง)</label>
+                            <input type="text" id="q_bookingId" class="form-control" placeholder="(ถ้ามี)">
                         </div>
                     </div>
                 </div>
 
-                <!-- Step 2: Install Address -->
-                <div class="card p-4 bg-white q-step-hidden" id="q_addressCard">
-                    <h5 class="card-title-custom">📍 ที่อยู่สถานที่ติดตั้ง</h5>
+                <!-- Step 2: Install Address (Cascading Dropdowns) -->
+                <div class="card p-4 bg-white" id="q_addressCard">
+                    <h5 class="card-title-custom">② ที่อยู่จัดส่ง/ติดตั้ง</h5>
                     <div class="row g-3">
                         <div class="col-md-4"><label class="small text-muted">บ้านเลขที่</label><input type="text" id="q_house" class="form-control"></div>
                         <div class="col-md-8"><label class="small text-muted">ถนน/ซอย</label><input type="text" id="q_street" class="form-control"></div>
-                        <div class="col-md-4"><label class="small text-muted">ตำบล/แขวง</label><input type="text" id="q_subdist" class="form-control"></div>
-                        <div class="col-md-4"><label class="small text-muted">อำเภอ/เขต</label><input type="text" id="q_dist" class="form-control"></div>
-                        <div class="col-md-4"><label class="small text-muted">จังหวัด</label><input type="text" id="q_prov" class="form-control"></div>
-                        <div class="col-md-4"><label class="small text-muted">รหัสไปรษณีย์</label><input type="text" id="q_zip" class="form-control"></div>
+                        <div class="col-md-4">
+                            <label class="small text-muted">จังหวัด</label>
+                            <select id="q_prov" class="form-select"><option value="">- กำลังโหลดจังหวัด -</option></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted">อำเภอ/เขต</label>
+                            <select id="q_dist" class="form-select" disabled><option value="">- เลือกจังหวัดก่อน -</option></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted">ตำบล/แขวง</label>
+                            <select id="q_subdist" class="form-select" disabled><option value="">- เลือกอำเภอก่อน -</option></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted">รหัสไปรษณีย์</label>
+                            <input type="text" id="q_zip" class="form-control bg-light" readonly>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Step 3: System Details -->
-                <div class="card p-4 bg-white q-step-hidden" id="q_systemCard">
-                    <h5 class="card-title-custom">⚙️ รายละเอียดระบบ</h5>
+                <div class="card p-4 bg-white" id="q_systemCard">
+                    <h5 class="card-title-custom">③ รายละเอียดระบบ</h5>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ชื่อระบบ</label>
+                        <label class="form-label fw-bold">ชื่อระบบ <span class="text-danger">*</span></label>
                         <input type="text" id="q_sysName" class="form-control" placeholder="เช่น Solar Rooftop 5kW Hybrid Single Phase">
+                        <div class="invalid-feedback">กรุณากรอกชื่อระบบ</div>
                     </div>
                     <div>
                         <label class="form-label fw-bold">รายละเอียด</label>
-                        <textarea id="q_detail" class="form-control" rows="6" onkeydown="autoBullet(event)"></textarea>
+                        <textarea id="q_detail" class="form-control" rows="6" onkeydown="autoBullet(event)" placeholder="พิมพ์รายละเอียด กด Enter เพื่อขึ้นบรรทัดใหม่อัตโนมัติ"></textarea>
                     </div>
                 </div>
 
                 <!-- Step 4: Pricing -->
-                <div class="card p-4 bg-white q-step-hidden" id="q_pricingCard">
-                    <h5 class="card-title-custom">💰 สรุปยอดเงิน</h5>
+                <div class="card p-4 bg-white" id="q_pricingCard">
+                    <h5 class="card-title-custom">④ สรุปยอดเงิน</h5>
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label fw-bold">ยอดรวมสุทธิ (Grand Total)</label>
+                            <label class="form-label fw-bold">ยอดรวมสุทธิ (Grand Total) <span class="text-danger">*</span></label>
                             <input type="number" id="q_total" class="form-control form-control-lg text-end" oninput="calcQTax()">
+                            <div class="invalid-feedback">กรุณากรอกยอดรวมสุทธิ</div>
                         </div>
                         <div class="col-md-4">
                             <small class="text-muted">ยอดก่อนภาษี (Subtotal)</small>
@@ -372,10 +439,11 @@
                 </div>
 
                 <!-- Step 5: Validity & Sales -->
-                <div class="card p-4 bg-white q-step-hidden" id="q_salesCard">
+                <div class="card p-4 bg-white" id="q_salesCard">
+                    <h5 class="card-title-custom">⑤ ระยะเวลาและพนักงานขาย</h5>
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="small text-muted">ระยะเวลายืนราคา (วัน)</label>
+                            <label class="small text-muted fw-bold">ระยะเวลายืนราคา (วัน)</label>
                             <input type="number" id="q_valid" class="form-control" value="15" oninput="calcValidityDate()">
                         </div>
                         <div class="col-md-3">
@@ -383,22 +451,35 @@
                             <input type="date" id="q_validDate" class="form-control" onchange="calcValidityDays()">
                         </div>
                         <div class="col-md-3">
-                            <label class="small text-muted">ชื่อพนักงานขาย</label>
-                            <input type="text" id="q_sname" class="form-control">
+                            <label class="small text-muted fw-bold">ชื่อพนักงานขาย <span class="text-danger">*</span></label>
+                            <input type="text" id="q_sname" class="form-control" placeholder="ชื่อพนักงานขาย">
+                            <div class="invalid-feedback">กรุณากรอกชื่อพนักงานขาย</div>
                         </div>
                         <div class="col-md-3">
-                            <label class="small text-muted">เบอร์พนักงานขาย</label>
-                            <input type="tel" id="q_sphone" class="form-control">
+                            <label class="small text-muted fw-bold">เบอร์พนักงานขาย <span class="text-danger">*</span></label>
+                            <input type="tel" id="q_sphone" class="form-control" placeholder="เบอร์พนักงานขาย">
+                            <div class="invalid-feedback">กรุณากรอกเบอร์พนักงานขาย</div>
                         </div>
                     </div>
                 </div>
 
-                <button class="btn btn-primary w-100 btn-lg shadow-sm q-step-hidden" onclick="submitQuotation()" id="q_btnSubmit">📄 สร้างใบเสนอราคา PDF</button>
+                <div class="row g-2" id="q_btnRow">
+                    <div class="col-md-6"><button class="btn btn-outline-ocean w-100 btn-lg shadow-sm" onclick="submitQuotation(false)" id="q_btnSaveOnly">💾 บันทึกแบบร่าง</button></div>
+                    <div class="col-md-6"><button class="btn btn-ocean w-100 btn-lg shadow-sm" onclick="submitQuotation(true)" id="q_btnSubmit">📄 สร้างใบเสนอราคา PDF</button></div>
+                </div>
 
-                <div id="q_successBox" class="success-box d-none border-primary">
-                    <h4 class="text-primary mb-2">✅ ออกใบเสนอราคาสำเร็จ!</h4>
-                    <p class="text-muted mb-3">เลขที่: <strong id="q_resultId" class="text-dark fs-5"></strong></p>
-                    <a id="q_pdfLink" href="#" target="_blank" class="btn btn-primary btn-lg">📄 เปิด PDF</a>
+                <div id="q_successBox" class="success-box d-none">
+                    <h4 class="mb-2" id="q_successTitle">✅ ทำรายการสำเร็จ!</h4>
+                    <p class="text-muted mb-2">เลขที่ใบเสนอราคา:</p>
+                    <div class="input-group mx-auto" style="max-width: 300px;">
+                        <input type="text" id="q_resultId" class="form-control text-center fw-bold fs-5" readonly>
+                        <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('q_resultId').value); this.textContent='คัดลอกแล้ว!';">คัดลอก</button>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-ocean btn-lg px-5 shadow-sm me-2 d-none" id="q_btnGenPdf" onclick="submitQuotation(true)">📄 สร้างใบเสนอราคา PDF</button>
+                        <a id="q_pdfLink" href="#" target="_blank" class="btn btn-ocean btn-lg px-5 shadow-sm d-none">📄 เปิด PDF</a>
+                    </div>
+                    <div class="mt-3"><button class="btn btn-sm btn-outline-secondary" onclick="resetQuotationForm()">สร้างใบเสนอราคาใหม่</button></div>
                 </div>
             </div>
         </div>
@@ -408,9 +489,10 @@
         // ==================== Globals ====================
         window.addressData = null;
         window.b_data = { leadId: '', bookingId: '', existingPdfUrl: '' };
-        window.q_data = {};
+        window.q_data = { quotationId: '', existingPdfUrl: '' };
         var allLeadsData = [];
         var allBookingsData = [];
+        var allQuotationsData = [];
         var productsData = [];
 
         // ==================== Loading Overlay ====================
@@ -504,6 +586,12 @@
                 .withFailureHandler(function() {})
                 .getBookingList();
 
+            // Load quotation list (background, for draft search)
+            google.script.run
+                .withSuccessHandler(function(res) { allQuotationsData = res; })
+                .withFailureHandler(function() {})
+                .getQuotationList();
+
             // Load products (background)
             google.script.run
                 .withSuccessHandler(function(res) {
@@ -523,6 +611,9 @@
                         window.addressData = data;
                         provSelect.innerHTML = '<option value="">- เลือกจังหวัด -</option>';
                         data.forEach(function(p) { provSelect.appendChild(new Option(p.name, p.name)); });
+                        var qProvSelect = document.getElementById('q_prov');
+                        qProvSelect.innerHTML = '<option value="">- เลือกจังหวัด -</option>';
+                        data.forEach(function(p) { qProvSelect.appendChild(new Option(p.name, p.name)); });
                     } else {
                         provSelect.innerHTML = '<option value="">- ไม่สามารถโหลดข้อมูลจังหวัดได้ -</option>';
                     }
@@ -540,6 +631,8 @@
                 el.addEventListener('input', function() { this.classList.remove('is-invalid'); });
                 el.addEventListener('change', function() { this.classList.remove('is-invalid'); });
             });
+
+            calcValidityDate();
         });
 
         // ==================== Cascading Address ====================
@@ -560,6 +653,53 @@
         document.getElementById('b_subdist').addEventListener('change', function() {
             var opt = this.options[this.selectedIndex];
             document.getElementById('b_zip').value = opt ? (opt.dataset.zip || '') : '';
+        });
+
+        // ==================== Quotation Cascading Address ====================
+        function populateQuotationDistricts(amphures) {
+            var distSelect = document.getElementById('q_dist');
+            var subSelect = document.getElementById('q_subdist');
+            subSelect.innerHTML = '<option value="">- เลือกอำเภอก่อน -</option>';
+            subSelect.disabled = true;
+            document.getElementById('q_zip').value = '';
+            distSelect.innerHTML = '<option value="">- เลือกอำเภอ -</option>';
+            if (amphures && amphures.length) {
+                amphures.forEach(function(a) { distSelect.appendChild(new Option(a.name, a.name)); });
+                distSelect.disabled = false;
+            } else { distSelect.disabled = true; }
+        }
+
+        function populateQuotationSubDistricts(tambons) {
+            var subSelect = document.getElementById('q_subdist');
+            subSelect.innerHTML = '<option value="">- เลือกตำบล -</option>';
+            document.getElementById('q_zip').value = '';
+            if (tambons && tambons.length) {
+                tambons.forEach(function(t) {
+                    var opt = new Option(t.name, t.name);
+                    opt.dataset.zip = t.zip;
+                    subSelect.appendChild(opt);
+                });
+                subSelect.disabled = false;
+            } else { subSelect.disabled = true; }
+        }
+
+        document.getElementById('q_prov').addEventListener('change', function() {
+            var provName = this.value;
+            var prov = window.addressData ? window.addressData.find(function(p) { return p.name === provName; }) : null;
+            populateQuotationDistricts(prov ? prov.amphures : null);
+        });
+
+        document.getElementById('q_dist').addEventListener('change', function() {
+            var provName = document.getElementById('q_prov').value;
+            var distName = this.value;
+            var prov = window.addressData ? window.addressData.find(function(p) { return p.name === provName; }) : null;
+            var amphure = prov ? prov.amphures.find(function(a) { return a.name === distName; }) : null;
+            populateQuotationSubDistricts(amphure ? amphure.tambons : null);
+        });
+
+        document.getElementById('q_subdist').addEventListener('change', function() {
+            var opt = this.options[this.selectedIndex];
+            document.getElementById('q_zip').value = opt ? (opt.dataset.zip || '') : '';
         });
 
         // ==================== Lead Search ====================
@@ -860,46 +1000,180 @@
             if (diff >= 0) document.getElementById('q_valid').value = diff;
         }
 
+        // ==================== Load Draft Quotation ====================
+        // ==================== Quotation Draft Search ====================
+        function filterQuotations(val) {
+            var container = document.getElementById('q_draftSuggestions');
+            document.getElementById('q_editSearch').removeAttribute('data-selected-id');
+            if (!val) { container.classList.add('d-none'); return; }
+            var filtered = allQuotationsData.filter(function(q) {
+                return q.displayText.toLowerCase().includes(val.toLowerCase()) || q.id.toLowerCase().includes(val.toLowerCase());
+            }).slice(0, 10);
+            if (filtered.length > 0) {
+                container.innerHTML = filtered.map(function(q) {
+                    var escaped = q.displayText.replace(/'/g, "\\'");
+                    return '<button type="button" class="list-group-item list-group-item-action py-2 text-start" onclick="selectQuotation(\'' + q.id + '\', \'' + escaped + '\')">' + q.displayText + '</button>';
+                }).join('');
+                container.classList.remove('d-none');
+            } else { container.classList.add('d-none'); }
+        }
+
+        function selectQuotation(id, displayText) {
+            var input = document.getElementById('q_editSearch');
+            input.value = displayText;
+            input.setAttribute('data-selected-id', id);
+            document.getElementById('q_draftSuggestions').classList.add('d-none');
+        }
+        }
+
+        function loadDraftQuotation() {
+            var input = document.getElementById('q_editSearch');
+            var id = (input.getAttribute('data-selected-id') || input.value.trim().split(' — ')[0]).trim();
+            input.removeAttribute('data-selected-id');
+            if (!id) { alert('กรุณาพิมพ์รหัสใบเสนอราคา'); return; }
+            if (!window.addressData) { alert('กรุณารอให้ข้อมูลที่อยู่โหลดเสร็จก่อน'); return; }
+            showLoading('กำลังดึงข้อมูลใบเสนอราคา...');
+            google.script.run
+                .withSuccessHandler(function(d) {
+                    hideLoading();
+                    if (d && !d.error) {
+                        window.q_data.quotationId = d.quotationId;
+                        window.q_data.existingPdfUrl = d.pdfUrl;
+
+                        document.getElementById('q_prefix').value = d.prefix || '';
+                        document.getElementById('q_fName').value = d.fName || '';
+                        document.getElementById('q_lName').value = d.lName || '';
+                        document.getElementById('q_phone').value = d.phone || '';
+                        document.getElementById('q_email').value = d.email || '';
+                        document.getElementById('q_tax').value = d.taxId || '';
+                        document.getElementById('q_project').value = d.project || '';
+                        document.getElementById('q_leadId').value = d.leadId || '';
+                        document.getElementById('q_bookingId').value = d.refBookingId || '';
+
+                        document.getElementById('q_house').value = d.houseNo || '';
+                        document.getElementById('q_street').value = d.street || '';
+                        document.getElementById('q_prov').value = d.province || '';
+                        document.getElementById('q_prov').dispatchEvent(new Event('change'));
+                        document.getElementById('q_dist').value = d.district || '';
+                        document.getElementById('q_dist').dispatchEvent(new Event('change'));
+                        document.getElementById('q_subdist').value = d.subDistrict || '';
+                        document.getElementById('q_zip').value = d.zipcode || '';
+
+                        document.getElementById('q_sysName').value = d.systemName || '';
+                        document.getElementById('q_detail').value = d.systemDetail || '';
+
+                        document.getElementById('q_total').value = d.grandTotal || '';
+                        calcQTax();
+
+                        document.getElementById('q_valid').value = d.validityDays || 15;
+                        calcValidityDate();
+                        document.getElementById('q_sname').value = d.salesName || '';
+                        document.getElementById('q_sphone').value = d.salesPhone || '';
+
+                        document.getElementById('q_editIndicator').classList.remove('d-none');
+                        document.getElementById('q_editingId').textContent = d.quotationId;
+                        document.getElementById('q_successBox').classList.add('d-none');
+                        document.getElementById('q_btnRow').classList.remove('d-none');
+                    } else { alert("ไม่พบข้อมูลใบเสนอราคา"); }
+                })
+                .withFailureHandler(function(err) { hideLoading(); alert('เกิดข้อผิดพลาด: ' + err.message); })
+                .searchQuotationData(id);
+        }
+
+        // ==================== Reset Quotation Form ====================
+        function resetQuotationForm() {
+            window.q_data = { quotationId: '', existingPdfUrl: '' };
+
+            ['q_prefix','q_fName','q_lName','q_phone','q_email','q_tax','q_project',
+             'q_leadId','q_bookingId','q_house','q_street','q_sysName','q_detail',
+             'q_total','q_sname','q_sphone','q_editSearch'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            document.getElementById('q_prov').value = '';
+            document.getElementById('q_prov').dispatchEvent(new Event('change'));
+
+            document.getElementById('q_sub').innerText = '0.00';
+            document.getElementById('q_vat').innerText = '0.00';
+            document.getElementById('q_thaiText').innerText = '-';
+            document.getElementById('q_valid').value = '15';
+            calcValidityDate();
+
+            document.getElementById('q_editIndicator').classList.add('d-none');
+            document.getElementById('q_successBox').classList.add('d-none');
+            document.getElementById('q_btnRow').classList.remove('d-none');
+
+            document.querySelectorAll('#quotation .is-invalid').forEach(function(el) {
+                el.classList.remove('is-invalid');
+            });
+        }
+
         // ==================== Quotation: Submit ====================
-        function submitQuotation() {
-            if (!window.q_data || !window.q_data.bookingId) return alert('กรุณาดึงข้อมูลใบจองก่อน');
+        function submitQuotation(createPdf) {
             if (!validateFields([
+                { id: 'q_prefix', label: 'คำนำหน้า', type: 'select' },
+                { id: 'q_fName', label: 'ชื่อลูกค้า' },
+                { id: 'q_phone', label: 'เบอร์ติดต่อ' },
                 { id: 'q_sysName', label: 'ชื่อระบบ' },
                 { id: 'q_total', label: 'ยอดรวมสุทธิ', type: 'number' },
                 { id: 'q_sname', label: 'ชื่อพนักงานขาย' },
                 { id: 'q_sphone', label: 'เบอร์พนักงานขาย' }
             ])) return;
+            if (!validateFormat('q_phone', /^0[2-9]\d{7,8}$/, 'เบอร์โทรไม่ถูกต้อง (ต้อง 9-10 หลัก ขึ้นต้นด้วย 0)')) return;
+            if (!validateFormat('q_email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'รูปแบบอีเมลไม่ถูกต้อง')) return;
+            if (!validateFormat('q_tax', /^\d{10,13}$/, 'เลขผู้เสียภาษีไม่ถูกต้อง (ต้อง 10 หรือ 13 หลัก)')) return;
 
-            var fd = Object.assign({}, window.q_data, {
-                refBookingId: window.q_data.bookingId,
-                systemName: document.getElementById('q_sysName').value,
-                systemDetail: document.getElementById('q_detail').value,
-                grandTotal: document.getElementById('q_total').value,
-                validityDays: document.getElementById('q_valid').value,
-                salesName: document.getElementById('q_sname').value,
-                salesPhone: document.getElementById('q_sphone').value,
-                // Install address (may differ from customer)
+            var fd = {
+                quotationId: window.q_data.quotationId || '',
+                existingPdfUrl: window.q_data.existingPdfUrl || '',
+                refBookingId: document.getElementById('q_bookingId').value,
+                leadId: document.getElementById('q_leadId').value,
+                prefix: document.getElementById('q_prefix').value,
+                fName: document.getElementById('q_fName').value,
+                lName: document.getElementById('q_lName').value,
+                phone: document.getElementById('q_phone').value,
+                email: document.getElementById('q_email').value,
+                taxId: document.getElementById('q_tax').value,
+                project: document.getElementById('q_project').value,
                 houseNo: document.getElementById('q_house').value,
                 street: document.getElementById('q_street').value,
                 subDistrict: document.getElementById('q_subdist').value,
                 district: document.getElementById('q_dist').value,
                 province: document.getElementById('q_prov').value,
-                zipcode: document.getElementById('q_zip').value
-            });
+                zipcode: document.getElementById('q_zip').value,
+                systemName: document.getElementById('q_sysName').value,
+                systemDetail: document.getElementById('q_detail').value,
+                grandTotal: document.getElementById('q_total').value,
+                validityDays: document.getElementById('q_valid').value,
+                salesName: document.getElementById('q_sname').value,
+                salesPhone: document.getElementById('q_sphone').value
+            };
 
-            showLoading('กำลังสร้างใบเสนอราคา PDF...');
+            showLoading(createPdf ? 'กำลังสร้างใบเสนอราคา PDF...' : 'กำลังบันทึกแบบร่าง...');
             google.script.run
                 .withSuccessHandler(function(res) {
                     hideLoading();
                     if (res.status === 'success') {
+                        window.q_data.quotationId = res.quotationId;
                         document.getElementById('q_successBox').classList.remove('d-none');
-                        document.getElementById('q_resultId').innerText = res.quotationId;
-                        document.getElementById('q_pdfLink').href = res.pdfUrl;
-                        window.open(res.pdfUrl, '_blank');
+                        document.getElementById('q_resultId').value = res.quotationId;
+                        document.getElementById('q_btnRow').classList.add('d-none');
+                        if (createPdf && res.pdfUrl && res.pdfUrl !== "-") {
+                            document.getElementById('q_successTitle').textContent = '✅ ออกใบเสนอราคาสำเร็จ!';
+                            document.getElementById('q_pdfLink').href = res.pdfUrl;
+                            document.getElementById('q_pdfLink').classList.remove('d-none');
+                            document.getElementById('q_btnGenPdf').classList.add('d-none');
+                            window.open(res.pdfUrl, '_blank');
+                        } else {
+                            document.getElementById('q_successTitle').textContent = '✅ บันทึกแบบร่างสำเร็จ!';
+                            document.getElementById('q_pdfLink').classList.add('d-none');
+                            document.getElementById('q_btnGenPdf').classList.remove('d-none');
+                        }
                     } else { alert('เกิดข้อผิดพลาด: ' + (res.message || '')); }
                 })
                 .withFailureHandler(function(err) { hideLoading(); alert('เกิดข้อผิดพลาด: ' + err.message); })
-                .processQuotation(fd);
+                .processQuotation(fd, createPdf);
         }
 
         // ==================== Auto Bullet ====================
@@ -912,6 +1186,7 @@
                 ta.selectionStart = ta.selectionEnd = pos + 3;
             }
         }
+
     </script>
 </body>
 
