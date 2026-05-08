@@ -15,7 +15,13 @@
       "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/tambon.json\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/province_with_amphure_tambon.json\")",
       "Bash(python -c ' *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
