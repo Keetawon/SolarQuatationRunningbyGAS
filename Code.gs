@@ -291,12 +291,12 @@ function processBooking(formData, createPdfFlag) {
       sheet.appendRow(rowData);
     }
 
-    // Force text format on columns that look like numbers (preserve leading zeros)
+    // Re-write text fields with @ format to preserve leading zeros
     var targetRow = isUpdate ? rowIndex : sheet.getLastRow();
-    sheet.getRange(targetRow, 7).setNumberFormat('@');   // Phone
-    sheet.getRange(targetRow, 9).setNumberFormat('@');   // Tax_ID
-    sheet.getRange(targetRow, 16).setNumberFormat('@');  // Zipcode
-    sheet.getRange(targetRow, 25).setNumberFormat('@');  // Sales_Phone
+    sheet.getRange(targetRow, 7).setNumberFormat('@').setValue(String(formData.phone));
+    sheet.getRange(targetRow, 9).setNumberFormat('@').setValue(String(formData.taxId));
+    sheet.getRange(targetRow, 16).setNumberFormat('@').setValue(String(formData.zipcode));
+    sheet.getRange(targetRow, 25).setNumberFormat('@').setValue(String(formData.salesPhone));
 
     return { status: 'success', bookingId: bookingId, pdfUrl: pdfUrl };
   } catch (e) { return { status: 'error', message: e.message }; }
@@ -393,24 +393,27 @@ function processQuotation(formData, createPdfFlag) {
       sheet.appendRow(rowData);
     }
 
+    // Re-write text fields with @ format to preserve leading zeros
     var targetRow = isUpdate ? rowIndex : sheet.getLastRow();
-    sheet.getRange(targetRow, 7).setNumberFormat('@');   // Phone
-    sheet.getRange(targetRow, 9).setNumberFormat('@');   // Tax_ID
-    sheet.getRange(targetRow, 17).setNumberFormat('@');  // Postcode
-    sheet.getRange(targetRow, 26).setNumberFormat('@');  // Sales_Phone
+    sheet.getRange(targetRow, 7).setNumberFormat('@').setValue(String(formData.phone));
+    sheet.getRange(targetRow, 9).setNumberFormat('@').setValue(String(formData.taxId));
+    sheet.getRange(targetRow, 17).setNumberFormat('@').setValue(String(formData.zipcode));
+    sheet.getRange(targetRow, 26).setNumberFormat('@').setValue(String(formData.salesPhone));
 
     return { status: 'success', quotationId: quotationId, pdfUrl: pdfUrl };
   } catch (e) { return { status: 'error', message: e.message }; }
 }
 
 function searchQuotationData(quotationId) {
-  if (!quotationId) return null;
+  if (!quotationId) return { error: "ไม่ได้ระบุรหัส" };
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ข้อมูลใบเสนอราคา');
-    if (!sheet) return null;
+    if (!sheet) return { error: "ไม่พบชีท 'ข้อมูลใบเสนอราคา'" };
     var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { error: "ชีทไม่มีข้อมูล" };
     for (var i = 1; i < data.length; i++) {
-      if (data[i][0] && data[i][0].toString().trim() === quotationId.trim()) {
+      var cellId = data[i][0] ? data[i][0].toString().trim() : '';
+      if (cellId === quotationId.trim()) {
         return {
           quotationId: data[i][0], date: data[i][1],
           refBookingId: data[i][2], leadId: data[i][3],
@@ -426,8 +429,8 @@ function searchQuotationData(quotationId) {
         };
       }
     }
-    return null;
-  } catch (e) { return { error: "ไม่พบข้อมูลใบเสนอราคา" }; }
+    return { error: "ไม่พบรหัส " + quotationId + " ในชีท (มี " + (data.length - 1) + " แถว)" };
+  } catch (e) { return { error: "Error: " + e.message }; }
 }
 
 function getQuotationList() {
