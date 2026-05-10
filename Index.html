@@ -1188,7 +1188,12 @@
                             window.q_data.quotationId = d.quotationId;
                             window.q_data.existingPdfUrl = d.pdfUrl;
                         }
-                    } else { alert("ไม่พบข้อมูล: " + ((d && d.error) ? d.error : 'ไม่ทราบสาเหตุ — ตรวจสอบว่าอัปเดต Code.gs แล้ว')); }
+                    } else {
+                        console.log('searchQuotationData returned:', d);
+                        var detail = (d && d.error) ? d.error
+                            : ('server returned ' + (d === null ? 'null' : typeof d) + ' — ตรวจสอบว่า Apps Script ได้อัปเดต Code.gs ล่าสุดแล้ว และมีฟังก์ชัน searchQuotationData');
+                        alert("ไม่พบข้อมูล: " + detail);
+                    }
                 })
                 .withFailureHandler(function (err) { hideLoading(); alert('เกิดข้อผิดพลาด: ' + err.message); })
                 .searchQuotationData(id);
