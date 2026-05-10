@@ -395,8 +395,8 @@ function processQuotation(formData, createPdfFlag) {
 
     // Re-write text fields with @ format to preserve leading zeros
     var targetRow = isUpdate ? rowIndex : sheet.getLastRow();
-    sheet.getRange(targetRow, 7).setNumberFormat('@').setValue(String(formData.phone));
-    sheet.getRange(targetRow, 9).setNumberFormat('@').setValue(String(formData.taxId));
+    sheet.getRange(targetRow, 8).setNumberFormat('@').setValue(String(formData.phone));
+    sheet.getRange(targetRow, 10).setNumberFormat('@').setValue(String(formData.taxId));
     sheet.getRange(targetRow, 17).setNumberFormat('@').setValue(String(formData.zipcode));
     sheet.getRange(targetRow, 26).setNumberFormat('@').setValue(String(formData.salesPhone));
 
