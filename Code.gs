@@ -405,32 +405,60 @@ function processQuotation(formData, createPdfFlag) {
 }
 
 function searchQuotationData(quotationId) {
+  console.log('searchQuotationData called with:', quotationId, '(type:', typeof quotationId, ')');
   if (!quotationId) return { error: "ไม่ได้ระบุรหัส" };
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ข้อมูลใบเสนอราคา');
     if (!sheet) return { error: "ไม่พบชีท 'ข้อมูลใบเสนอราคา'" };
     var data = sheet.getDataRange().getValues();
+    console.log('sheet rows:', data.length);
     if (data.length <= 1) return { error: "ชีทไม่มีข้อมูล" };
+    var target = String(quotationId).trim();
     for (var i = 1; i < data.length; i++) {
       var cellId = data[i][0] ? data[i][0].toString().trim() : '';
-      if (cellId === quotationId.trim()) {
-        return {
-          quotationId: data[i][0], date: data[i][1],
-          refBookingId: data[i][2], leadId: data[i][3],
-          prefix: data[i][4], fName: data[i][5], lName: data[i][6],
-          phone: data[i][7], email: data[i][8], taxId: data[i][9],
-          project: data[i][10], houseNo: data[i][11], street: data[i][12],
-          subDistrict: data[i][13], district: data[i][14], province: data[i][15], zipcode: data[i][16],
-          systemName: data[i][17], systemDetail: data[i][18],
-          subtotal: data[i][19], vat: data[i][20], grandTotal: data[i][21],
-          validityDays: data[i][22], validityDateStr: data[i][23],
-          salesName: data[i][24], salesPhone: data[i][25],
-          userLog: data[i][26], pdfUrl: data[i][27], status: data[i][28]
+      if (cellId === target) {
+        console.log('match found at row', i + 1);
+        var result = {
+          quotationId: String(data[i][0] || ''),
+          date: data[i][1] instanceof Date ? data[i][1].toISOString() : String(data[i][1] || ''),
+          refBookingId: String(data[i][2] || ''),
+          leadId: String(data[i][3] || ''),
+          prefix: String(data[i][4] || ''),
+          fName: String(data[i][5] || ''),
+          lName: String(data[i][6] || ''),
+          phone: String(data[i][7] || ''),
+          email: String(data[i][8] || ''),
+          taxId: String(data[i][9] || ''),
+          project: String(data[i][10] || ''),
+          houseNo: String(data[i][11] || ''),
+          street: String(data[i][12] || ''),
+          subDistrict: String(data[i][13] || ''),
+          district: String(data[i][14] || ''),
+          province: String(data[i][15] || ''),
+          zipcode: String(data[i][16] || ''),
+          systemName: String(data[i][17] || ''),
+          systemDetail: String(data[i][18] || ''),
+          subtotal: Number(data[i][19]) || 0,
+          vat: Number(data[i][20]) || 0,
+          grandTotal: Number(data[i][21]) || 0,
+          validityDays: Number(data[i][22]) || 15,
+          validityDateStr: String(data[i][23] || ''),
+          salesName: String(data[i][24] || ''),
+          salesPhone: String(data[i][25] || ''),
+          userLog: String(data[i][26] || ''),
+          pdfUrl: String(data[i][27] || ''),
+          status: String(data[i][28] || '')
         };
+        console.log('returning result for', result.quotationId);
+        return result;
       }
     }
-    return { error: "ไม่พบรหัส " + quotationId + " ในชีท (มี " + (data.length - 1) + " แถว)" };
-  } catch (e) { return { error: "Error: " + e.message }; }
+    console.log('no match for', target);
+    return { error: "ไม่พบรหัส " + target + " ในชีท (มี " + (data.length - 1) + " แถว)" };
+  } catch (e) {
+    console.error('searchQuotationData error:', e.message, e.stack);
+    return { error: "Error: " + e.message };
+  }
 }
 
 function getQuotationList() {
