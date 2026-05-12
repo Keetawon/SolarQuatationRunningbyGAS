@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Krub:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -192,6 +193,30 @@
         .q-step-hidden {
             display: none;
         }
+
+        /* ROI Wizard */
+        .roi-step { display: none; }
+        .roi-step.active { display: block; }
+        .roi-progress-bar { display: flex; justify-content: space-between; margin: 0 -5px; }
+        .roi-progress-step { text-align: center; flex: 1; cursor: pointer; position: relative; padding: 8px 2px; font-size: 0.75rem; color: #999; }
+        .roi-progress-step.completed { color: var(--ocean-dark); }
+        .roi-progress-step.current { color: var(--ocean-main); font-weight: 700; }
+        .roi-progress-step .step-dot { width: 28px; height: 28px; border-radius: 50%; background: #e0e0e0; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        .roi-progress-step.completed .step-dot { background: var(--ocean-main); color: white; }
+        .roi-progress-step.current .step-dot { background: var(--ocean-dark); color: white; }
+        .roi-option-card { border: 2px solid #e0e0e0; border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s; }
+        .roi-option-card:hover { border-color: var(--ocean-light); background: var(--ocean-bg); }
+        .roi-option-card.selected { border-color: var(--ocean-main); background: var(--ocean-bg); }
+        .roi-compare-table { font-size: 0.85rem; }
+        .roi-compare-table th { background: var(--ocean-bg); position: sticky; top: 0; }
+        .roi-finance-card { border: 2px solid #e0e0e0; border-radius: 15px; padding: 15px; margin-bottom: 10px; transition: all 0.2s; }
+        .roi-finance-card.selected { border-color: var(--ocean-main); box-shadow: 0 0 0 3px rgba(38,166,154,0.2); }
+        .roi-hero-net { font-size: 3.5rem; font-weight: 700; color: var(--ocean-dark); }
+        .roi-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+        .roi-badge-best { background: #e8f5e9; color: #2e7d32; }
+        .roi-badge-fast { background: #fff3e0; color: #e65100; }
+        .roi-badge-fit { background: #e3f2fd; color: #1565c0; }
+        #roi-helper { font-family: 'Krub', sans-serif; }
     </style>
 </head>
 
@@ -214,7 +239,10 @@
     <div class="container" style="max-width: 900px;">
 
 
-        <ul class="nav nav-tabs mb-4 d-none" id="myTab" role="tablist">
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="roi-tab" data-bs-toggle="tab" data-bs-target="#roi-helper" type="button" role="tab">&#9889; ROI Helper</button>
+            </li>
             <li class="nav-item" role="presentation"><button class="nav-link active" id="booking-tab"
                     data-bs-toggle="tab" data-bs-target="#booking" type="button" role="tab">📑 ระบบออกใบจอง</button>
             </li>
@@ -331,6 +359,373 @@
                             onclick="location.reload()">เริ่มใหม่</button></div>
                 </div>
             </div>
+
+            <!-- ==================== TAB: ROI Helper ==================== -->
+            <div class="tab-pane fade" id="roi-helper" role="tabpanel">
+
+                <!-- ROI Wizard Container -->
+                <div class="card p-3 p-md-4 bg-white" style="border-top: 5px solid var(--ocean-main) !important;">
+
+                    <!-- Progress Bar -->
+                    <div class="roi-progress-bar mb-4" id="roiProgressBar">
+                        <div class="roi-progress-step current" data-step="0" onclick="roiShowStep(0)">
+                            <div class="step-dot">0</div><span>เริ่ม</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="1" onclick="roiShowStep(1)">
+                            <div class="step-dot">1</div><span>ลูกค้า</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="2" onclick="roiShowStep(2)">
+                            <div class="step-dot">2</div><span>ค่าไฟ</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="3" onclick="roiShowStep(3)">
+                            <div class="step-dot">3</div><span>กลางวัน/กลางคืน</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="4" onclick="roiShowStep(4)">
+                            <div class="step-dot">4</div><span>ตัวเลือก</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="5" onclick="roiShowStep(5)">
+                            <div class="step-dot">5</div><span>เปรียบเทียบ</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="6" onclick="roiShowStep(6)">
+                            <div class="step-dot">6</div><span>ไฟเนาซ์</span>
+                        </div>
+                        <div class="roi-progress-step" data-step="7" onclick="roiShowStep(7)">
+                            <div class="step-dot">7</div><span>สรุป</span>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 0: Start / Search ===== -->
+                    <div class="roi-step active" id="roi-step-0">
+                        <h5 class="card-title-custom">ค้นหา session เดิม หรือ สร้างใหม่</h5>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="position-relative">
+                                    <input type="text" id="roi_searchBox" class="form-control" placeholder="พิมพ์ชื่อลูกค้าหรือเลข session..." oninput="roiSearchSessions()">
+                                </div>
+                                <div id="roi_searchResults" class="list-group position-relative shadow-sm mt-2 d-none" style="max-height:250px;overflow-y:auto;"></div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <button class="btn btn-ocean btn-lg w-100" onclick="roiNewSession()">
+                                    <i class="bi bi-plus-circle me-2"></i> สร้าง session ใหม่
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 1: Customer Profile ===== -->
+                    <div class="roi-step" id="roi-step-1">
+                        <h5 class="card-title-custom">ข้อมูลลูกค้า</h5>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">ชื่อ / เลขที่</label>
+                                <input type="text" id="roi_customerLabel" class="form-control" placeholder="เลขที่ - ชื่อ" oninput="roiScheduleAutoSave()">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">เฟสไฟฟ้า</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="roi_phase" id="roi_phase1" value="1" checked onchange="roiScheduleAutoSave()">
+                                        <label class="form-check-label" for="roi_phase1">1 เฟส</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="roi_phase" id="roi_phase3" value="3" onchange="roiScheduleAutoSave()">
+                                        <label class="form-check-label" for="roi_phase3">3 เฟส</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    การไฟฟ้า
+                                    <span class="badge bg-info text-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="MEA = กฟน. (กรุงเทพฯ) / PEA = กฟภ. (ต่างจังหวัด)">?</span>
+                                </label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="roi_authority" id="roi_mea" value="MEA" checked onchange="roiScheduleAutoSave()">
+                                        <label class="form-check-label" for="roi_mea">MEA (กฟน.)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="roi_authority" id="roi_pea" value="PEA" onchange="roiScheduleAutoSave()">
+                                        <label class="form-check-label" for="roi_pea">PEA (กฟภ.)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(0)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" onclick="roiShowStep(2)">ถัดไป &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 2: Electricity Anchor ===== -->
+                    <div class="roi-step" id="roi-step-2">
+                        <h5 class="card-title-custom">ค่าไฟรายเดือน</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">ค่าไฟต่อเดือน (บาท)</label>
+                                <input type="number" id="roi_monthlyBill" class="form-control" placeholder="เช่น 3000" min="0" step="100" oninput="roiOnBillChange()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">หรือ หน่วยไฟต่อเดือน (kWh)</label>
+                                <input type="number" id="roi_monthlyKwh" class="form-control" placeholder="เช่น 500" min="0" step="10" oninput="roiOnKwhChange()">
+                            </div>
+                        </div>
+                        <div id="roi_billInferred" class="alert alert-info mt-3 d-none">
+                            <strong>ประมาณการ:</strong> <span id="roi_inferredKwh">0</span> kWh/เดือน
+                            &nbsp;|&nbsp; อัตราเฉลี่ย: <span id="roi_avgRate">0</span> บาท/kWh
+                            &nbsp;|&nbsp; Tariff: <span id="roi_tariffId">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(1)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" onclick="roiShowStep(3)">ถัดไป &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 3: Day/Night Split ===== -->
+                    <div class="roi-step" id="roi-step-3">
+                        <h5 class="card-title-custom">สัดส่วนการใช้ไฟ กลางวัน / กลางคืน</h5>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">ทราบสัดส่วนอย่างไร?</label>
+                                <div class="row g-2">
+                                    <div class="col-6 col-md-3">
+                                        <div class="roi-option-card text-center" data-mode="percent" onclick="roiSelectSplitMode('percent')">
+                                            <div style="font-size:1.5rem;">%</div>
+                                            <small>ทราบ % กลางวัน</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="roi-option-card text-center" data-mode="kwh" onclick="roiSelectSplitMode('kwh')">
+                                            <div style="font-size:1.5rem;">kWh</div>
+                                            <small>ทราบ kWh</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="roi-option-card text-center" data-mode="appliance" onclick="roiSelectSplitMode('appliance')">
+                                            <div style="font-size:1.5rem;">&#128268;</div>
+                                            <small>เลือกเครื่องใช้ไฟ</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="roi-option-card text-center selected" data-mode="default" onclick="roiSelectSplitMode('default')">
+                                            <div style="font-size:1.5rem;">&#9889;</div>
+                                            <small>ใช้ค่า default 40%</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-panel: Know % -->
+                            <div class="col-12 d-none" id="roi_splitPercent">
+                                <label class="form-label fw-bold">สัดส่วนกลางวัน (%)</label>
+                                <input type="range" id="roi_dayFractionSlider" class="form-range" min="0.1" max="0.9" step="0.05" value="0.4" oninput="roiOnDayFractionSlider()">
+                                <div class="d-flex justify-content-between">
+                                    <small>10%</small>
+                                    <strong id="roi_dayFractionValue">40%</strong>
+                                    <small>90%</small>
+                                </div>
+                            </div>
+
+                            <!-- Sub-panel: Know kWh -->
+                            <div class="col-12 d-none" id="roi_splitKwh">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">กลางวัน (kWh/เดือน)</label>
+                                        <input type="number" id="roi_dayKwh" class="form-control" min="0" placeholder="เช่น 200" oninput="roiScheduleAutoSave()">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">กลางคืน (kWh/เดือน)</label>
+                                        <input type="number" id="roi_nightKwh" class="form-control" min="0" placeholder="เช่น 300" oninput="roiScheduleAutoSave()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-panel: Appliance Picker -->
+                            <div class="col-12 d-none" id="roi_splitAppliance">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>เครื่องใช้ไฟ</th>
+                                                <th style="width:70px;">จำนวน</th>
+                                                <th style="width:80px;">Watt</th>
+                                                <th style="width:70px;">ชม.(วัน)</th>
+                                                <th style="width:70px;">ชม.(คืน)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="roi_applianceBody"></tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-ocean mt-2" onclick="roiAddApplianceRow()">+ เพิ่มแถว</button>
+                                <div id="roi_applianceSummary" class="alert alert-info mt-2 d-none">
+                                    กลางวัน: <strong id="roi_appDayKwh">0</strong> kWh
+                                    &nbsp;|&nbsp; กลางคืน: <strong id="roi_appNightKwh">0</strong> kWh
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(2)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" onclick="roiShowStep(4)">ถัดไป &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 4: Options ===== -->
+                    <div class="roi-step" id="roi-step-4">
+                        <h5 class="card-title-custom">ตัวเลือกเพิ่มเติม</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="roi_includeFit" onchange="roiScheduleAutoSave()">
+                                    <label class="form-check-label fw-bold" for="roi_includeFit">รวม FIT (ซื้อไฟคืน)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="roi_existingSolar" onchange="roiScheduleAutoSave()">
+                                    <label class="form-check-label fw-bold" for="roi_existingSolar">มีแผงโซลาร์เซลล์อยู่แล้ว</label>
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <a class="text-decoration-none" data-bs-toggle="collapse" href="#roi_advancedPanel" role="button" aria-expanded="false" aria-controls="roi_advancedPanel">
+                                    <strong style="color: var(--ocean-dark);">&#9881; ตั้งค่าขั้นสูง (Assumptions)</strong>
+                                </a>
+                                <div class="collapse mt-2" id="roi_advancedPanel">
+                                    <div class="card card-body bg-light">
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <label class="form-label">PSH (ชม./วัน)</label>
+                                                <input type="number" id="roi_psh" class="form-control form-control-sm" value="4.5" step="0.1" min="1" max="8" oninput="roiScheduleAutoSave()">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Performance Ratio</label>
+                                                <input type="number" id="roi_pr" class="form-control form-control-sm" value="0.85" step="0.01" min="0.5" max="1" oninput="roiScheduleAutoSave()">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Degradation (%/ปี)</label>
+                                                <input type="number" id="roi_degradation" class="form-control form-control-sm" value="0.5" step="0.1" min="0" max="2" oninput="roiScheduleAutoSave()">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Escalation (%/ปี)</label>
+                                                <input type="number" id="roi_escalation" class="form-control form-control-sm" value="3" step="0.5" min="0" max="10" oninput="roiScheduleAutoSave()">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(3)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" onclick="roiCalcComparison(); roiShowStep(5);">เปรียบเทียบระบบ &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 5: System Comparison ===== -->
+                    <div class="roi-step" id="roi-step-5">
+                        <h5 class="card-title-custom">เปรียบเทียบระบบโซลาร์เซลล์</h5>
+                        <div id="roi_compareLoading" class="text-center text-muted py-4 d-none">
+                            <div class="spinner-border spinner-border-sm me-2"></div> กำลังคำนวณ...
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered roi-compare-table" id="roi_compareTable">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>รุ่น</th>
+                                        <th>kWp</th>
+                                        <th>แบตเตอรี่</th>
+                                        <th>ราคา (บาท)</th>
+                                        <th>ผลิต/ปี (kWh)</th>
+                                        <th>ใช้เอง/ปี</th>
+                                        <th>ขาย/ปี</th>
+                                        <th>ค่าไฟสุทธิ/ปี</th>
+                                        <th>ประหยัด/ปี</th>
+                                        <th>คืนทุน (ปี)</th>
+                                        <th>NPV 25ปี</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roi_compareBody"></tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-sm btn-outline-ocean mt-2" onclick="roiAddCustomSystem()">+ เพิ่มระบบกำหนดเอง</button>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(4)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" id="roi_btnToFinance" onclick="roiShowStep(6)" disabled>เลือกระบบแล้ว &rarr; ไฟเนาซ์</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 6: Financing Guide ===== -->
+                    <div class="roi-step" id="roi-step-6">
+                        <h5 class="card-title-custom">แนะนำแผนไฟเนาซ์</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="roi_wantTaxDeduct" onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_wantTaxDeduct">ต้องการลดหย่อนภาษี</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="roi_hasCollateral" onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_hasCollateral">มีบ้านคู่มือ</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">เงินดาวน์ (%)</label>
+                                <input type="number" id="roi_downPercent" class="form-control" value="0" min="0" max="100" step="10" oninput="roiCalcFinancing()">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">เรียงตาม</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankNet" value="net" checked onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_rankNet">Net Monthly (ต่ำสุด)</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankRate" value="rate" onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_rankRate">ดอกเบี้ยต่ำสุด</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankMonthly" value="monthly" onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_rankMonthly">ผ่อน/เดือนต่ำสุด</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankInterest" value="interest" onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_rankInterest">ดอกเบี้ยรวมน้อยสุด</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="roi_financeCards"></div>
+                        <div id="roi_noFinanceResult" class="alert alert-warning d-none">
+                            ไม่พบแผนไฟเนาซ์ที่เหมาะสม ลองปรับเงื่อนไข
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(5)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" id="roi_btnToPresent" onclick="roiShowStep(7)" disabled>เลือกแผนแล้ว &rarr; สรุป</button>
+                        </div>
+                    </div>
+
+                    <!-- ===== STEP 7: Presentation Mode (placeholder) ===== -->
+                    <div class="roi-step" id="roi-step-7">
+                        <h5 class="card-title-custom">สรุปผลการวิเคราะห์ ROI</h5>
+                        <div id="roi_presentContent" class="text-center py-5">
+                            <div style="font-size:3rem; color: var(--ocean-main);">&#128200;</div>
+                            <h4>Presentation Mode</h4>
+                            <p class="text-muted">จะพัฒนาต่อใน chunk (d)</p>
+                            <div id="roi_presentPlaceholder" class="card bg-light p-4 mt-3">
+                                <p>session_id: <strong id="roi_presSessionId">-</strong></p>
+                                <p>ระบบที่เลือก: <strong id="roi_presProduct">-</strong></p>
+                                <p>Net Monthly: <strong id="roi_presNetMonthly">-</strong> บาท</p>
+                                <p>Payback: <strong id="roi_presPayback">-</strong> ปี</p>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(6)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" onclick="roiAutoSave(); alert('บันทึก session แล้ว');">บันทึก Session</button>
+                        </div>
+                    </div>
+
+                </div><!-- /card -->
+            </div><!-- /roi-helper tab-pane -->
 
             <!-- ==================== TAB: ใบเสนอราคา ==================== -->
             <div class="tab-pane fade show active" id="quotation" role="tabpanel">
@@ -1327,6 +1722,600 @@
                 ta.value = ta.value.substring(0, pos) + '\n• ' + ta.value.substring(pos);
                 ta.selectionStart = ta.selectionEnd = pos + 3;
             }
+        }
+
+        // ==================== ROI Helper ====================
+        var ROI_STEPS = ['start', 'profile', 'bill', 'split', 'options', 'compare', 'finance', 'present'];
+        var roiCurrentStep = 0;
+        var roiComparisonResults = [];
+        var roiSelectedProductIdx = -1;
+        var roiFinancingResults = [];
+        var roiSelectedPlanIdx = -1;
+        var roiSplitMode = 'default';
+
+        // Initialize tooltips on the ROI tab
+        var roiTabEl = document.getElementById('roi-tab');
+        if (roiTabEl) {
+            roiTabEl.addEventListener('shown.bs.tab', function () {
+                roiInit();
+            });
+        }
+
+        function roiInit() {
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('#roi-helper [data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Load bootstrap data if not yet loaded
+            if (!roiBootstrap) {
+                showLoading('กำลังโหลดข้อมูล ROI...');
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        hideLoading();
+                        roiBootstrap = data;
+                        roiShowStep(0);
+                    })
+                    .withFailureHandler(function (err) {
+                        hideLoading();
+                        alert('ไม่สามารถโหลดข้อมูลได้: ' + err.message);
+                    })
+                    .getBootstrapData();
+            }
+        }
+
+        function roiShowStep(n) {
+            roiCurrentStep = n;
+            // Hide all steps, show target
+            var steps = document.querySelectorAll('.roi-step');
+            for (var i = 0; i < steps.length; i++) {
+                steps[i].classList.remove('active');
+            }
+            var target = document.getElementById('roi-step-' + n);
+            if (target) target.classList.add('active');
+
+            // Update progress bar
+            var progressSteps = document.querySelectorAll('.roi-progress-step');
+            for (var j = 0; j < progressSteps.length; j++) {
+                var stepNum = parseInt(progressSteps[j].getAttribute('data-step'));
+                progressSteps[j].classList.remove('completed', 'current');
+                if (stepNum < n) {
+                    progressSteps[j].classList.add('completed');
+                } else if (stepNum === n) {
+                    progressSteps[j].classList.add('current');
+                }
+            }
+
+            // Populate appliance picker when entering step 3
+            if (n === 3 && roiBootstrap && roiBootstrap.appliances) {
+                roiPopulateAppliances();
+            }
+        }
+
+        function roiSearchSessions() {
+            var query = document.getElementById('roi_searchBox').value.trim();
+            var container = document.getElementById('roi_searchResults');
+            if (!query) {
+                container.classList.add('d-none');
+                container.innerHTML = '';
+                return;
+            }
+            google.script.run
+                .withSuccessHandler(function (results) {
+                    container.classList.remove('d-none');
+                    if (!results || results.length === 0) {
+                        container.innerHTML = '<div class="list-group-item text-muted">ไม่พบ session</div>';
+                        return;
+                    }
+                    var html = '';
+                    for (var i = 0; i < results.length; i++) {
+                        var r = results[i];
+                        html += '<div class="list-group-item list-group-item-action" onclick="roiLoadSession(\'' + r.session_id + '\')">';
+                        html += '<strong>' + (r.customer_label || '-') + '</strong>';
+                        html += ' <small class="text-muted">(' + r.session_id + ')</small>';
+                        html += '<br><small>' + (r.status || '') + ' | ' + (r.last_updated || '') + '</small>';
+                        if (r.selected_kw) {
+                            html += ' <span class="badge bg-info">' + r.selected_kw + ' kWp</span>';
+                        }
+                        if (r.monthly_net) {
+                            html += ' <span class="badge bg-success">Net ' + Math.round(r.monthly_net) + ' THB</span>';
+                        }
+                        html += '</div>';
+                    }
+                    container.innerHTML = html;
+                })
+                .withFailureHandler(function (err) {
+                    container.classList.remove('d-none');
+                    container.innerHTML = '<div class="list-group-item text-danger">ผิดพลาด: ' + err.message + '</div>';
+                })
+                .searchRoiSessions(query, 20);
+        }
+
+        function roiLoadSession(id) {
+            showLoading('กำลังโหลด session...');
+            google.script.run
+                .withSuccessHandler(function (session) {
+                    hideLoading();
+                    if (!session) {
+                        alert('ไม่พบ session');
+                        return;
+                    }
+                    roiSession = session;
+                    roiRestoreSession(session);
+                    // Go to step 5 (comparison) or wherever the user left off
+                    if (session.selected_product_id_fk) {
+                        roiShowStep(6);
+                    } else if (session.monthly_kwh || session.monthly_bill) {
+                        roiShowStep(5);
+                        roiCalcComparison();
+                    } else {
+                        roiShowStep(1);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    hideLoading();
+                    alert('ผิดพลาด: ' + err.message);
+                })
+                .loadRoiSession(id);
+        }
+
+        function roiRestoreSession(session) {
+            if (session.customer_label) document.getElementById('roi_customerLabel').value = session.customer_label;
+            if (session.phase == 3) {
+                document.getElementById('roi_phase3').checked = true;
+            } else {
+                document.getElementById('roi_phase1').checked = true;
+            }
+            if (session.authority === 'PEA') {
+                document.getElementById('roi_pea').checked = true;
+            } else {
+                document.getElementById('roi_mea').checked = true;
+            }
+            if (session.monthly_bill) document.getElementById('roi_monthlyBill').value = session.monthly_bill;
+            if (session.monthly_kwh) document.getElementById('roi_monthlyKwh').value = session.monthly_kwh;
+            if (session.day_fraction) {
+                document.getElementById('roi_dayFractionSlider').value = session.day_fraction;
+                document.getElementById('roi_dayFractionValue').textContent = Math.round(session.day_fraction * 100) + '%';
+            }
+            if (session.day_kwh) document.getElementById('roi_dayKwh').value = session.day_kwh;
+            if (session.night_kwh) document.getElementById('roi_nightKwh').value = session.night_kwh;
+            if (session.usage_source) roiSelectSplitMode(session.usage_source);
+            if (session.include_fit) document.getElementById('roi_includeFit').checked = true;
+            if (session.existing_solar) document.getElementById('roi_existingSolar').checked = true;
+            if (session.assumption_id_fk) {
+                // restore advanced assumptions from session if needed
+            }
+            // Clear search results
+            document.getElementById('roi_searchResults').classList.add('d-none');
+        }
+
+        function roiNewSession() {
+            roiSession = { session_id: '' };
+            // Clear all form fields
+            document.getElementById('roi_customerLabel').value = '';
+            document.getElementById('roi_phase1').checked = true;
+            document.getElementById('roi_mea').checked = true;
+            document.getElementById('roi_monthlyBill').value = '';
+            document.getElementById('roi_monthlyKwh').value = '';
+            document.getElementById('roi_billInferred').classList.add('d-none');
+            document.getElementById('roi_includeFit').checked = false;
+            document.getElementById('roi_existingSolar').checked = false;
+            roiSelectSplitMode('default');
+            roiSelectedProductIdx = -1;
+            roiSelectedPlanIdx = -1;
+            roiComparisonResults = [];
+            roiFinancingResults = [];
+            document.getElementById('roi_compareBody').innerHTML = '';
+            document.getElementById('roi_financeCards').innerHTML = '';
+            document.getElementById('roi_btnToFinance').disabled = true;
+            document.getElementById('roi_btnToPresent').disabled = true;
+            roiShowStep(1);
+        }
+
+        function roiOnBillChange() {
+            var bill = parseFloat(document.getElementById('roi_monthlyBill').value) || 0;
+            var authority = document.querySelector('input[name="roi_authority"]:checked').value;
+            var infoDiv = document.getElementById('roi_billInferred');
+
+            if (bill <= 0) {
+                infoDiv.classList.add('d-none');
+                return;
+            }
+
+            // Use client-side inference from RoiCalc
+            if (roiBootstrap && roiBootstrap.tariffs && typeof RoiCalc !== 'undefined') {
+                var result = RoiCalc.inferKwhFromBill(bill, authority, roiBootstrap.tariffs);
+                if (result && result.kWh > 0) {
+                    document.getElementById('roi_inferredKwh').textContent = result.kWh.toFixed(1);
+                    document.getElementById('roi_avgRate').textContent = result.avgRate.toFixed(4);
+                    document.getElementById('roi_tariffId').textContent = result.tariff_id || '-';
+                    document.getElementById('roi_monthlyKwh').value = Math.round(result.kWh);
+                    infoDiv.classList.remove('d-none');
+                } else {
+                    infoDiv.classList.add('d-none');
+                }
+            }
+            roiScheduleAutoSave();
+        }
+
+        function roiOnKwhChange() {
+            var kwh = parseFloat(document.getElementById('roi_monthlyKwh').value) || 0;
+            var bill = parseFloat(document.getElementById('roi_monthlyBill').value) || 0;
+            if (kwh > 0 && bill <= 0) {
+                // clear bill if user enters kWh directly
+                document.getElementById('roi_billInferred').classList.add('d-none');
+            }
+            roiScheduleAutoSave();
+        }
+
+        function roiSelectSplitMode(mode) {
+            roiSplitMode = mode;
+            // Update card selection UI
+            var cards = document.querySelectorAll('.roi-option-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('selected');
+                if (cards[i].getAttribute('data-mode') === mode) {
+                    cards[i].classList.add('selected');
+                }
+            }
+            // Show/hide sub-panels
+            document.getElementById('roi_splitPercent').classList.add('d-none');
+            document.getElementById('roi_splitKwh').classList.add('d-none');
+            document.getElementById('roi_splitAppliance').classList.add('d-none');
+
+            if (mode === 'percent') {
+                document.getElementById('roi_splitPercent').classList.remove('d-none');
+            } else if (mode === 'kwh') {
+                document.getElementById('roi_splitKwh').classList.remove('d-none');
+            } else if (mode === 'appliance') {
+                document.getElementById('roi_splitAppliance').classList.remove('d-none');
+                roiPopulateAppliances();
+            } else if (mode === 'default') {
+                document.getElementById('roi_dayFractionSlider').value = 0.4;
+                document.getElementById('roi_dayFractionValue').textContent = '40%';
+            }
+            roiScheduleAutoSave();
+        }
+
+        function roiOnDayFractionSlider() {
+            var val = parseFloat(document.getElementById('roi_dayFractionSlider').value) || 0.4;
+            document.getElementById('roi_dayFractionValue').textContent = Math.round(val * 100) + '%';
+            roiScheduleAutoSave();
+        }
+
+        function roiPopulateAppliances() {
+            if (!roiBootstrap || !roiBootstrap.appliances) return;
+            var tbody = document.getElementById('roi_applianceBody');
+            if (tbody.children.length > 0) return; // already populated
+            var appliances = roiBootstrap.appliances;
+            for (var i = 0; i < appliances.length; i++) {
+                var a = appliances[i];
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + (a.appliance_name || a.name || '-') + '</td>' +
+                    '<td><input type="number" class="form-control form-control-sm app-qty" value="0" min="0" data-idx="' + i + '" oninput="roiCalcApplianceSummary()"></td>' +
+                    '<td>' + (a.watts || 0) + '</td>' +
+                    '<td><input type="number" class="form-control form-control-sm app-dayhrs" value="' + (a.day_hours || 0) + '" min="0" max="24" step="0.5" data-idx="' + i + '" oninput="roiCalcApplianceSummary()"></td>' +
+                    '<td><input type="number" class="form-control form-control-sm app-nighthrs" value="' + (a.night_hours || 0) + '" min="0" max="24" step="0.5" data-idx="' + i + '" oninput="roiCalcApplianceSummary()"></td>';
+                tbody.appendChild(tr);
+            }
+        }
+
+        function roiAddApplianceRow() {
+            var tbody = document.getElementById('roi_applianceBody');
+            var tr = document.createElement('tr');
+            var idx = tbody.children.length;
+            tr.innerHTML = '<td><input type="text" class="form-control form-control-sm" placeholder="ชื่อเครื่องใช้ไฟ"></td>' +
+                '<td><input type="number" class="form-control form-control-sm app-qty" value="1" min="0"></td>' +
+                '<td><input type="number" class="form-control form-control-sm" placeholder="Watt" min="0"></td>' +
+                '<td><input type="number" class="form-control form-control-sm app-dayhrs" value="0" min="0" max="24" step="0.5"></td>' +
+                '<td><input type="number" class="form-control form-control-sm app-nighthrs" value="0" min="0" max="24" step="0.5"></td>';
+            tbody.appendChild(tr);
+        }
+
+        function roiCalcApplianceSummary() {
+            var tbody = document.getElementById('roi_applianceBody');
+            var rows = tbody.children;
+            var dayTotal = 0;
+            var nightTotal = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var qty = parseFloat(rows[i].querySelector('.app-qty').value) || 0;
+                var watts = parseFloat(rows[i].cells[2].textContent) || 0;
+                var dayHrs = parseFloat(rows[i].querySelector('.app-dayhrs').value) || 0;
+                var nightHrs = parseFloat(rows[i].querySelector('.app-nighthrs').value) || 0;
+                dayTotal += qty * watts * dayHrs * 30 / 1000;
+                nightTotal += qty * watts * nightHrs * 30 / 1000;
+            }
+            document.getElementById('roi_appDayKwh').textContent = dayTotal.toFixed(1);
+            document.getElementById('roi_appNightKwh').textContent = nightTotal.toFixed(1);
+            var summaryDiv = document.getElementById('roi_applianceSummary');
+            if (dayTotal > 0 || nightTotal > 0) {
+                summaryDiv.classList.remove('d-none');
+            } else {
+                summaryDiv.classList.add('d-none');
+            }
+            roiScheduleAutoSave();
+        }
+
+        function roiCalcComparison() {
+            if (!roiBootstrap || !roiBootstrap.products || typeof RoiCalc === 'undefined') {
+                alert('ข้อมูลไม่พร้อม กรุณารอสักครู่');
+                return;
+            }
+            var loadingDiv = document.getElementById('roi_compareLoading');
+            loadingDiv.classList.remove('d-none');
+
+            var session = roiGetSessionObj();
+            var assumptions = roiBootstrap.assumptions || [];
+            var benchmarks = roiBootstrap.benchmarks || [];
+
+            roiComparisonResults = RoiCalc.buildSystemComparison(session, roiBootstrap.products, assumptions, benchmarks);
+            loadingDiv.classList.add('d-none');
+
+            // Render table
+            var tbody = document.getElementById('roi_compareBody');
+            tbody.innerHTML = '';
+            for (var i = 0; i < roiComparisonResults.length; i++) {
+                var r = roiComparisonResults[i];
+                var tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.setAttribute('data-idx', i);
+                tr.onclick = (function (idx) {
+                    return function () { roiSelectProduct(idx); };
+                })(i);
+
+                var badges = '';
+                if (r.badges) {
+                    for (var b = 0; b < r.badges.length; b++) {
+                        var badge = r.badges[b];
+                        if (badge === 'best_npv') badges += ' <span class="roi-badge roi-badge-best">คุ้มสุด</span>';
+                        if (badge === 'fastest_payback') badges += ' <span class="roi-badge roi-badge-fast">คืนทุนเร็ว</span>';
+                        if (badge === 'best_fit') badges += ' <span class="roi-badge roi-badge-fit">size พอดี</span>';
+                    }
+                }
+
+                tr.innerHTML = '<td><input type="radio" name="roi_productSelect" value="' + i + '"' + (roiSelectedProductIdx === i ? ' checked' : '') + '></td>' +
+                    '<td><strong>' + (r.product.product_name || r.product.name || '-') + '</strong>' + badges + '</td>' +
+                    '<td>' + (r.product.kWp || r.product.kwp || '-') + '</td>' +
+                    '<td>' + (r.product.battery_kwh || r.product.batteryKwh || 0) + ' kWh</td>' +
+                    '<td><input type="number" class="form-control form-control-sm" style="width:100px;" value="' + (r.product.price || 0) + '" data-price-idx="' + i + '" onclick="event.stopPropagation()" oninput="roiOnPriceChange(' + i + ', this.value)"></td>' +
+                    '<td>' + Math.round(r.production || r.annualProduction || 0).toLocaleString() + '</td>' +
+                    '<td>' + Math.round(r.selfUse || r.annualSelfUse || 0).toLocaleString() + '</td>' +
+                    '<td>' + Math.round(r.sell || r.annualSell || 0).toLocaleString() + '</td>' +
+                    '<td>' + Math.round(r.netBill || r.annualNetBill || 0).toLocaleString() + '</td>' +
+                    '<td class="text-success fw-bold">' + Math.round(r.saving || r.annualSaving || 0).toLocaleString() + '</td>' +
+                    '<td class="fw-bold">' + (r.payback || r.paybackYears || 0).toFixed(1) + '</td>' +
+                    '<td class="fw-bold">' + Math.round(r.npv || r.npv25 || 0).toLocaleString() + '</td>';
+                tbody.appendChild(tr);
+            }
+        }
+
+        function roiOnPriceChange(idx, val) {
+            if (roiComparisonResults[idx]) {
+                roiComparisonResults[idx].product.price = parseFloat(val) || 0;
+                // Recalculate this row
+                roiCalcComparison();
+            }
+        }
+
+        function roiSelectProduct(idx) {
+            roiSelectedProductIdx = idx;
+            // Update radio buttons
+            var radios = document.querySelectorAll('input[name="roi_productSelect"]');
+            for (var i = 0; i < radios.length; i++) {
+                radios[i].checked = (parseInt(radios[i].value) === idx);
+            }
+            // Highlight row
+            var rows = document.querySelectorAll('#roi_compareBody tr');
+            for (var j = 0; j < rows.length; j++) {
+                rows[j].classList.remove('table-active');
+                if (parseInt(rows[j].getAttribute('data-idx')) === idx) {
+                    rows[j].classList.add('table-active');
+                }
+            }
+            document.getElementById('roi_btnToFinance').disabled = false;
+            roiScheduleAutoSave();
+        }
+
+        function roiAddCustomSystem() {
+            var name = prompt('ชื่อระบบ:', 'Custom System');
+            if (!name) return;
+            var kwp = parseFloat(prompt('kWp:', '5')) || 5;
+            var price = parseFloat(prompt('ราคา (บาท):', '150000')) || 150000;
+            var battery = parseFloat(prompt('แบตเตอรี่ (kWh, 0 = ไม่มี):', '0')) || 0;
+
+            // Add to local products array
+            roiBootstrap.products.push({
+                product_id: 'custom_' + Date.now(),
+                product_name: name,
+                kWp: kwp,
+                kwp: kwp,
+                price: price,
+                battery_kwh: battery,
+                batteryKwh: battery,
+                status: 'active'
+            });
+            roiCalcComparison();
+        }
+
+        function roiCalcFinancing() {
+            if (!roiBootstrap || roiSelectedProductIdx < 0 || typeof RoiCalc === 'undefined') {
+                return;
+            }
+            var session = roiGetSessionObj();
+            var selectedResult = roiComparisonResults[roiSelectedProductIdx];
+            if (!selectedResult) return;
+
+            var loan = selectedResult.product.price * (1 - (parseFloat(document.getElementById('roi_downPercent').value) || 0) / 100);
+            var strategy = document.querySelector('input[name="roi_rankStrategy"]:checked').value;
+
+            roiFinancingResults = RoiCalc.rankFinancingPlans(
+                loan,
+                roiBootstrap.products,
+                selectedResult.product,
+                roiBootstrap.plans || [],
+                roiBootstrap.tiers || [],
+                roiBootstrap.benchmarks || [],
+                session,
+                strategy
+            );
+
+            var container = document.getElementById('roi_financeCards');
+            var noResult = document.getElementById('roi_noFinanceResult');
+            container.innerHTML = '';
+
+            if (!roiFinancingResults || roiFinancingResults.length === 0) {
+                noResult.classList.remove('d-none');
+                return;
+            }
+            noResult.classList.add('d-none');
+
+            var top5 = roiFinancingResults.slice(0, 5);
+            for (var i = 0; i < top5.length; i++) {
+                var p = top5[i];
+                var card = document.createElement('div');
+                card.className = 'roi-finance-card' + (roiSelectedPlanIdx === i ? ' selected' : '');
+                card.onclick = (function (idx) {
+                    return function () { roiSelectPlan(idx); };
+                })(i);
+
+                var tags = '';
+                if (i === 0) tags += '<span class="roi-badge roi-badge-best">แนะนำ</span> ';
+                if (p.tags) {
+                    for (var t = 0; t < p.tags.length; t++) {
+                        tags += '<span class="roi-badge roi-badge-fit">' + p.tags[t] + '</span> ';
+                    }
+                }
+
+                card.innerHTML = '<div class="d-flex justify-content-between align-items-start">' +
+                    '<div><strong>' + (p.plan.bank_name || p.plan.bank || '-') + ' - ' + (p.plan.plan_name || p.plan.name || '-') + '</strong> ' + tags + '</div>' +
+                    '<div class="text-end"><span class="roi-hero-net" style="font-size:1.5rem;">' + Math.round(p.monthlyNet || 0).toLocaleString() + '</span><br><small class="text-muted">NET/เดือน (บาท)</small></div>' +
+                    '</div>' +
+                    '<hr class="my-2">' +
+                    '<div class="row text-center">' +
+                    '<div class="col"><small class="text-muted">ผ่อน/เดือน</small><br><strong>' + Math.round(p.firstInstallment || p.monthlyPayment || 0).toLocaleString() + '</strong></div>' +
+                    '<div class="col"><small class="text-muted">ประหยัด/เดือน</small><br><strong class="text-success">' + Math.round(p.monthlySaving || 0).toLocaleString() + '</strong></div>' +
+                    '<div class="col"><small class="text-muted">ดอกเบี้ยรวม</small><br><strong>' + Math.round(p.totalInterest || 0).toLocaleString() + '</strong></div>' +
+                    '<div class="col"><small class="text-muted">ระยะเวลา</small><br><strong>' + (p.termMonths || 0) + ' เดือน</strong></div>' +
+                    '</div>';
+                container.appendChild(card);
+            }
+        }
+
+        function roiSelectPlan(idx) {
+            roiSelectedPlanIdx = idx;
+            // Update card selection
+            var cards = document.querySelectorAll('.roi-finance-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('selected');
+            }
+            if (cards[idx]) cards[idx].classList.add('selected');
+            document.getElementById('roi_btnToPresent').disabled = false;
+
+            // Update presentation placeholder
+            if (roiFinancingResults[idx]) {
+                var plan = roiFinancingResults[idx];
+                document.getElementById('roi_presNetMonthly').textContent = Math.round(plan.monthlyNet || 0).toLocaleString();
+            }
+            if (roiSelectedProductIdx >= 0 && roiComparisonResults[roiSelectedProductIdx]) {
+                var prod = roiComparisonResults[roiSelectedProductIdx];
+                document.getElementById('roi_presProduct').textContent = prod.product.product_name || prod.product.name || '-';
+                document.getElementById('roi_presPayback').textContent = (prod.payback || prod.paybackYears || 0).toFixed(1);
+            }
+            roiScheduleAutoSave();
+        }
+
+        function roiScheduleAutoSave() {
+            if (roiAutoSaveTimer) clearTimeout(roiAutoSaveTimer);
+            roiAutoSaveTimer = setTimeout(function () { roiAutoSave(); }, 2000);
+        }
+
+        function roiAutoSave() {
+            var obj = roiGetSessionObj();
+            if (!obj.customer_label && !obj.session_id) return; // nothing to save yet
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res && res.status === 'success' && res.session_id) {
+                        if (!roiSession) roiSession = {};
+                        roiSession.session_id = res.session_id;
+                        document.getElementById('roi_presSessionId').textContent = res.session_id;
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    // silent fail for autosave
+                })
+                .upsertRoiSession(obj);
+        }
+
+        function roiGetSessionObj() {
+            var sessionId = (roiSession && roiSession.session_id) ? roiSession.session_id : '';
+            var authority = document.querySelector('input[name="roi_authority"]:checked');
+            var phase = document.querySelector('input[name="roi_phase"]:checked');
+            var rankStrategy = document.querySelector('input[name="roi_rankStrategy"]:checked');
+
+            var obj = {
+                session_id: sessionId,
+                status: 'draft',
+                customer_label: document.getElementById('roi_customerLabel').value,
+                phase: phase ? parseInt(phase.value) : 1,
+                authority: authority ? authority.value : 'MEA',
+                monthly_bill: parseFloat(document.getElementById('roi_monthlyBill').value) || 0,
+                monthly_kwh: parseFloat(document.getElementById('roi_monthlyKwh').value) || 0,
+                usage_source: roiSplitMode,
+                include_fit: document.getElementById('roi_includeFit').checked,
+                existing_solar: document.getElementById('roi_existingSolar').checked,
+                selected_rank_strategy: rankStrategy ? rankStrategy.value : 'net',
+                selected_down_percent: parseFloat(document.getElementById('roi_downPercent').value) || 0,
+                notes: ''
+            };
+
+            // Day/night split
+            if (roiSplitMode === 'percent') {
+                obj.day_fraction = parseFloat(document.getElementById('roi_dayFractionSlider').value) || 0.4;
+            } else if (roiSplitMode === 'kwh') {
+                obj.day_kwh = parseFloat(document.getElementById('roi_dayKwh').value) || 0;
+                obj.night_kwh = parseFloat(document.getElementById('roi_nightKwh').value) || 0;
+                var total = obj.day_kwh + obj.night_kwh;
+                obj.day_fraction = total > 0 ? obj.day_kwh / total : 0.4;
+            } else if (roiSplitMode === 'appliance') {
+                var dayKwhEl = document.getElementById('roi_appDayKwh');
+                var nightKwhEl = document.getElementById('roi_appNightKwh');
+                obj.day_kwh = dayKwhEl ? parseFloat(dayKwhEl.textContent) || 0 : 0;
+                obj.night_kwh = nightKwhEl ? parseFloat(nightKwhEl.textContent) || 0 : 0;
+                var totalApp = obj.day_kwh + obj.night_kwh;
+                obj.day_fraction = totalApp > 0 ? obj.day_kwh / totalApp : 0.4;
+            } else {
+                obj.day_fraction = 0.4;
+            }
+
+            // Selected product
+            if (roiSelectedProductIdx >= 0 && roiComparisonResults[roiSelectedProductIdx]) {
+                var selProd = roiComparisonResults[roiSelectedProductIdx].product;
+                obj.selected_product_id_fk = selProd.product_id || selProd.id || '';
+                obj.selected_kw = selProd.kWp || selProd.kwp || 0;
+                obj.selected_price = selProd.price || 0;
+                obj.selected_battery_kwh = selProd.battery_kwh || selProd.batteryKwh || 0;
+                var selResult = roiComparisonResults[roiSelectedProductIdx];
+                obj.selected_payback_yr = selResult.payback || selResult.paybackYears || 0;
+                obj.selected_npv25 = selResult.npv || selResult.npv25 || 0;
+                obj.annual_saving_yr1 = selResult.saving || selResult.annualSaving || 0;
+            }
+
+            // Selected plan
+            if (roiSelectedPlanIdx >= 0 && roiFinancingResults[roiSelectedPlanIdx]) {
+                var selPlan = roiFinancingResults[roiSelectedPlanIdx];
+                obj.selected_plan_id_fk = selPlan.plan ? (selPlan.plan.plan_id || selPlan.plan.id || '') : '';
+                obj.selected_term_months = selPlan.termMonths || 0;
+                obj.monthly_installment = Math.round(selPlan.firstInstallment || selPlan.monthlyPayment || 0);
+                obj.monthly_saving = Math.round(selPlan.monthlySaving || 0);
+                obj.monthly_net = Math.round(selPlan.monthlyNet || 0);
+                obj.total_interest = Math.round(selPlan.totalInterest || 0);
+            }
+
+            // Advanced assumptions
+            obj.assumption_id_fk = 'DEFAULT';
+
+            return obj;
         }
 
     </script>
