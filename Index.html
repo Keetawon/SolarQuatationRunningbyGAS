@@ -578,6 +578,9 @@
         var allBookingsData = [];
         var allQuotationsData = [];
         var productsData = [];
+        var roiBootstrap = null;
+        var roiSession = null;
+        var roiAutoSaveTimer = null;
 
         // ==================== Loading Overlay ====================
         function showLoading(msg) {
@@ -1327,6 +1330,7 @@
         }
 
     </script>
+    <?!= include('RoiCalc'); ?>
 </body>
 
 </html>
