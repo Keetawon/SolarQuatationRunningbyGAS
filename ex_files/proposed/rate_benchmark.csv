@@ -1,0 +1,5 @@
+benchmark_code,value,effective_date,source,status,note_th
+MRR,0.066,2025-04-01,BOT,active,Minimum Retail Rate เฉลี่ย (ตัวอย่าง — ปรับตามแบงค์จริง)
+MLR,0.064,2025-04-01,BOT,active,Minimum Loan Rate เฉลี่ย
+MOR,0.072,2025-04-01,BOT,active,Minimum Overdraft Rate เฉลี่ย
+EIR-BBL,0.07075,2025-04-01,BBL,active,Effective Interest Rate ของ BBL (อิงประกาศ)

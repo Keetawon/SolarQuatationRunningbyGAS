@@ -1,0 +1,7 @@
+assumption_id,region,peak_sun_hours,performance_ratio,panel_degradation_yr,system_life_yr,battery_dod,battery_round_trip,battery_life_yr,battery_replacement_cost_factor,electricity_escalation_yr,discount_rate,fit_price,maintenance_yr,vat_rate,status,note_th
+DEFAULT,DEFAULT,4.5,0.85,0.005,25,0.9,0.92,10,0.7,0.03,0.05,2.2,3500,0.07,active,ค่ามาตรฐาน ใช้เมื่อไม่ระบุภาค
+REGION-N,เหนือ,4.6,0.85,0.005,25,0.9,0.92,10,0.7,0.03,0.05,2.2,3500,0.07,active,ภาคเหนือ แดดดีกว่าเล็กน้อย
+REGION-NE,อีสาน,4.8,0.85,0.005,25,0.9,0.92,10,0.7,0.03,0.05,2.2,3500,0.07,active,ภาคอีสาน แดดดีที่สุด
+REGION-C,กลาง,4.5,0.85,0.005,25,0.9,0.92,10,0.7,0.03,0.05,2.2,3500,0.07,active,ภาคกลาง
+REGION-S,ใต้,4.2,0.85,0.005,25,0.9,0.92,10,0.7,0.03,0.05,2.2,3500,0.07,active,ภาคใต้ ฝนมาก PSH ต่ำกว่า
+REGION-E,ตะวันออก,4.6,0.85,0.005,25,0.9,0.92,10,0.7,0.03,0.05,2.2,3500,0.07,active,ภาคตะวันออก
