@@ -1,0 +1,630 @@
+<script>
+/**
+ * RoiCalc.html — Pure JS ROI Calculation Engine (client-side)
+ * Formulas from Solar_ROI_Calculator_v3.xlsx (§3 of design doc)
+ * No GAS dependencies — runs entirely in browser
+ */
+var RoiCalc = (function () {
+
+  // ==================== Energy Flow ====================
+
+  function calcEnergyFlow(inputs) {
+    var kWp = inputs.kWp || 0;
+    var PSH = inputs.PSH || 4.5;
+    var PR = inputs.PR || 0.85;
+    var monthlyKwh = inputs.monthlyKwh || 0;
+    var dayFrac = inputs.dayFraction || 0.4;
+    var kWhBatt = inputs.batteryKwh || 0;
+    var includeFit = inputs.includeFit || false;
+    var deg = inputs.panelDegradation || 0.005;
+
+    var solarDaily = kWp * PSH * PR;
+    var totalDaily = monthlyKwh * 12 / 365;
+    var dayDaily = totalDaily * dayFrac;
+    var nightDaily = totalDaily * (1 - dayFrac);
+
+    var selfD, sellD, buyD, chargeD, battOut;
+
+    if (kWhBatt > 0) {
+      // Case 2: with battery
+      var excessD = Math.max(0, solarDaily - dayDaily);
+      chargeD = Math.min(excessD, kWhBatt * (inputs.batteryDod || 0.9));
+      sellD = Math.max(0, excessD - kWhBatt * (inputs.batteryDod || 0.9));
+      battOut = chargeD * (inputs.batteryRoundTrip || 0.92);
+      var buyND = Math.max(0, nightDaily - battOut);
+      var buyDD = Math.max(0, dayDaily - solarDaily);
+      buyD = buyND + buyDD;
+      selfD = Math.min(solarDaily, dayDaily) + battOut;
+    } else {
+      // Case 1: no battery
+      selfD = Math.min(solarDaily, dayDaily);
+      sellD = Math.max(0, solarDaily - dayDaily);
+      buyD = nightDaily + Math.max(0, dayDaily - solarDaily);
+      chargeD = 0;
+      battOut = 0;
+    }
+
+    return {
+      solarDaily: solarDaily,
+      totalDaily: totalDaily,
+      dayDaily: dayDaily,
+      nightDaily: nightDaily,
+      selfD: selfD,
+      sellD: sellD,
+      buyD: buyD,
+      chargeD: chargeD || 0,
+      battOut: battOut || 0,
+      hasBattery: kWhBatt > 0
+    };
+  }
+
+  // ==================== Annual Cashflow ====================
+
+  function calcAnnualCashflow(inputs) {
+    var flow = calcEnergyFlow(inputs);
+    var deg = inputs.panelDegradation || 0.005;
+    var life = inputs.systemLifeYr || 25;
+    var pElec = inputs.avgElecRate || 4.0;
+    var esc = inputs.electricityEscalation || 0.03;
+    var pFit = inputs.fitPrice || 2.2;
+    var includeFit = inputs.includeFit || false;
+    var mMain = inputs.maintenanceYr != null ? inputs.maintenanceYr : 3500;
+    var pSolar = inputs.price || 0;
+    var disc = inputs.discountRate || 0.05;
+
+    var years = [];
+    var cumulative = 0;
+    var npv = 0;
+
+    for (var n = 1; n <= life; n++) {
+      var degFactor = Math.pow(1 - deg, n - 1);
+      var solarYr = flow.solarDaily * degFactor * 365;
+      var selfYr = flow.selfD * degFactor * 365;
+      var sellYr = (includeFit ? flow.sellD * degFactor * 365 : 0);
+      var saving = selfYr * pElec * Math.pow(1 + esc, n - 1) + sellYr * pFit;
+      var cf = saving - mMain - (n === 1 ? pSolar : 0);
+
+      cumulative += cf;
+      npv += cf / Math.pow(1 + disc, n);
+
+      years.push({
+        year: n,
+        solarYr: solarYr,
+        selfYr: selfYr,
+        sellYr: sellYr,
+        saving: saving,
+        maintenance: mMain,
+        investment: n === 1 ? pSolar : 0,
+        cashflow: cf,
+        cumulative: cumulative,
+        npvSoFar: npv
+      });
+    }
+
+    return { years: years, flow: flow };
+  }
+
+  // ==================== KPI ====================
+
+  function calcKpi(cashflowData) {
+    var years = cashflowData.years;
+    var npv = years[years.length - 1].npvSoFar;
+
+    // Payback — interpolate year where cumulative crosses 0
+    var payback = null;
+    for (var i = 0; i < years.length; i++) {
+      if (years[i].cumulative >= 0) {
+        if (i === 0) {
+          payback = 1;
+        } else {
+          var prev = years[i - 1].cumulative;
+          var curr = years[i].cumulative;
+          var frac = prev !== curr ? -prev / (curr - prev) : 0;
+          payback = i + frac;
+        }
+        break;
+      }
+    }
+
+    // IRR — Newton's method
+    var irr = _calcIRR(years);
+
+    return {
+      payback: payback,
+      npv: npv,
+      irr: irr,
+      totalSaving: years.reduce(function (s, y) { return s + y.saving; }, 0),
+      totalMaintenance: years.reduce(function (s, y) { return s + y.maintenance; }, 0),
+      annualSavingYr1: years.length > 0 ? years[0].saving : 0
+    };
+  }
+
+  function _calcIRR(years) {
+    var cfs = years.map(function (y) { return y.cashflow; });
+    var guess = 0.1;
+    for (var iter = 0; iter < 100; iter++) {
+      var npv = 0, dnpv = 0;
+      for (var i = 0; i < cfs.length; i++) {
+        var factor = Math.pow(1 + guess, i + 1);
+        npv += cfs[i] / factor;
+        dnpv -= (i + 1) * cfs[i] / (factor * (1 + guess));
+      }
+      if (Math.abs(npv) < 0.01) return guess;
+      if (Math.abs(dnpv) < 1e-10) break;
+      guess = guess - npv / dnpv;
+      if (guess < -0.99) guess = -0.5;
+      if (guess > 10) guess = 5;
+    }
+    return guess;
+  }
+
+  // ==================== Installment Schedule ====================
+
+  function calcInstallmentSchedule(principal, plan, tiers, termMonths, downPct, benchmarks) {
+    var loan = principal * (1 - (downPct || 0));
+    if (loan <= 0 || termMonths <= 0) {
+      return { schedule: [], totalInterest: 0, avgInstallment: 0, monthlyPayments: [] };
+    }
+
+    var planTiers = _filterTiers(tiers, plan.plan_id, termMonths, downPct);
+    if (plan.rate_type === 'flat') {
+      return _calcFlatSchedule(loan, planTiers, termMonths, benchmarks);
+    } else {
+      return _calcReducingSchedule(loan, planTiers, termMonths, benchmarks);
+    }
+  }
+
+  function _filterTiers(tiers, planId, termMonths, downPct) {
+    return tiers.filter(function (t) {
+      if (t.plan_id !== planId) return false;
+      var terms = t.applies_to_term_months.toString().split(',');
+      if (terms.indexOf('*') === -1 && terms.indexOf(String(termMonths)) === -1) return false;
+      var downs = t.applies_to_down_percent.toString().split(',');
+      // compare as numbers to handle '0.1' vs '0.10'
+      if (downs.indexOf('*') === -1) {
+        var downMatch = downs.some(function (d) { return Math.abs(Number(d) - Number(downPct)) < 0.001; });
+        if (!downMatch) return false;
+      }
+      return true;
+    }).sort(function (a, b) { return a.from_month - b.from_month; });
+  }
+
+  function _resolveTierRate(tier, benchmarks) {
+    if (tier.rate_value && tier.rate_value !== '' && Number(tier.rate_value) !== 0) {
+      return Number(tier.rate_value);
+    }
+    if (tier.reference_offset !== undefined && tier.reference_offset !== null && tier.reference_offset !== '') {
+      var offset = Number(tier.reference_offset);
+      // resolve benchmark — try to find MRR/MLR from benchmarks
+      var refCode = 'MRR'; // default
+      for (var i = 0; i < benchmarks.length; i++) {
+        var bm = benchmarks[i];
+        if (bm.benchmark_code) {
+          var val = Number(bm.value) || 0;
+          return val + offset;
+        }
+      }
+      return offset; // fallback
+    }
+    return 0;
+  }
+
+  function _calcFlatSchedule(loan, tiers, termMonths, benchmarks) {
+    var schedule = [];
+    var totalInterest = 0;
+    var principalPerMonth = loan / termMonths;
+
+    if (tiers.length === 0) {
+      // no tiers — treat as 0% interest
+      for (var m = 1; m <= termMonths; m++) {
+        schedule.push({
+          month: m,
+          principal: principalPerMonth,
+          interest: 0,
+          installment: principalPerMonth
+        });
+      }
+    } else {
+      // fill gaps if tiers don't cover all months
+      var sorted = tiers.slice().sort(function (a, b) { return a.from_month - b.from_month; });
+      for (var m = 1; m <= termMonths; m++) {
+        var tier = _findTierForMonth(m, sorted);
+        var r = tier ? _resolveTierRate(tier, benchmarks) : 0;
+        var interestPerMonth = loan * r / 12;
+        var installment = principalPerMonth + interestPerMonth;
+        totalInterest += interestPerMonth;
+        schedule.push({
+          month: m,
+          principal: principalPerMonth,
+          interest: interestPerMonth,
+          installment: installment
+        });
+      }
+    }
+
+    var avgInstallment = schedule.length > 0
+      ? schedule.reduce(function (s, r) { return s + r.installment; }, 0) / schedule.length
+      : 0;
+
+    return {
+      schedule: schedule,
+      totalInterest: totalInterest,
+      avgInstallment: avgInstallment
+    };
+  }
+
+  function _calcReducingSchedule(loan, tiers, termMonths, benchmarks) {
+    var schedule = [];
+    var balance = loan;
+    var totalInterest = 0;
+    var sorted = tiers.slice().sort(function (a, b) { return a.from_month - b.from_month; });
+
+    for (var m = 1; m <= termMonths; m++) {
+      var tier = _findTierForMonth(m, sorted);
+      var annualRate = tier ? _resolveTierRate(tier, benchmarks) : 0;
+      var monthlyRate = annualRate / 12;
+      var interest = balance * monthlyRate;
+
+      // remaining months at this rate tier
+      var remainingInTier = tier ? (tier.to_month - m + 1) : (termMonths - m + 1);
+      remainingInTier = Math.min(remainingInTier, termMonths - m + 1);
+
+      var installment;
+      if (monthlyRate === 0) {
+        installment = balance / remainingInTier + interest;
+      } else {
+        installment = _pmt(monthlyRate, remainingInTier, balance);
+      }
+
+      var principalPaid = installment - interest;
+      if (principalPaid > balance) {
+        principalPaid = balance;
+        installment = principalPaid + interest;
+      }
+      balance -= principalPaid;
+      if (balance < 0) balance = 0;
+      totalInterest += interest;
+
+      schedule.push({
+        month: m,
+        principal: principalPaid,
+        interest: interest,
+        installment: installment,
+        balance: balance
+      });
+    }
+
+    var avgInstallment = schedule.length > 0
+      ? schedule.reduce(function (s, r) { return s + r.installment; }, 0) / schedule.length
+      : 0;
+
+    return {
+      schedule: schedule,
+      totalInterest: totalInterest,
+      avgInstallment: avgInstallment
+    };
+  }
+
+  function _findTierForMonth(month, sortedTiers) {
+    for (var i = 0; i < sortedTiers.length; i++) {
+      if (month >= sortedTiers[i].from_month && month <= sortedTiers[i].to_month) {
+        return sortedTiers[i];
+      }
+    }
+    return sortedTiers.length > 0 ? sortedTiers[sortedTiers.length - 1] : null;
+  }
+
+  function _pmt(rate, nper, pv) {
+    if (rate === 0) return pv / nper;
+    return pv * rate * Math.pow(1 + rate, nper) / (Math.pow(1 + rate, nper) - 1);
+  }
+
+  // ==================== System Comparison ====================
+
+  function buildSystemComparison(session, products, assumptions, benchmarks) {
+    var assumption = _getDefaultAssumption(assumptions);
+    var inputs = _sessionToCalcInputs(session, assumption);
+
+    var results = products.map(function (product) {
+      var prodInputs = _mergeProductInputs(inputs, product);
+      return _calcProductRow(prodInputs, product);
+    });
+
+    // highlight badges
+    if (results.length > 0) {
+      var bestNpv = results.reduce(function (best, r) { return r.kpi.npv > best.kpi.npv ? r : best; });
+      bestNpv._badges = bestNpv._badges || [];
+      bestNpv._badges.push('คุ้มสุด');
+
+      var bestPayback = results.reduce(function (best, r) {
+        return (r.kpi.payback || 999) < (best.kpi.payback || 999) ? r : best;
+      });
+      bestPayback._badges = bestPayback._badges || [];
+      bestPayback._badges.push('คืนทุนเร็ว');
+
+      results.forEach(function (r) {
+        if (r.flow.solarDaily * 365 > 0) {
+          var ratio = r.flow.selfD / r.flow.dayDaily;
+          if (ratio >= 0.85 && ratio <= 1.15) {
+            r._badges = r._badges || [];
+            r._badges.push('size พอดี');
+          }
+        }
+      });
+    }
+
+    return results;
+  }
+
+  function _getDefaultAssumption(assumptions) {
+    for (var i = 0; i < assumptions.length; i++) {
+      if (assumptions[i].assumption_id === 'DEFAULT' || assumptions[i].region === 'DEFAULT') {
+        return assumptions[i];
+      }
+    }
+    return assumptions[0] || {};
+  }
+
+  function _sessionToCalcInputs(session, assumption) {
+    return {
+      monthlyKwh: Number(session.monthly_kwh) || 0,
+      dayFraction: Number(session.day_fraction) || 0.4,
+      includeFit: session.include_fit === true || session.include_fit === 'TRUE',
+      PSH: Number(assumption.peak_sun_hours) || 4.5,
+      PR: Number(assumption.performance_ratio) || 0.85,
+      panelDegradation: Number(assumption.panel_degradation_yr) || 0.005,
+      systemLifeYr: Number(assumption.system_life_yr) || 25,
+      batteryDod: Number(assumption.battery_dod) || 0.9,
+      batteryRoundTrip: Number(assumption.battery_round_trip) || 0.92,
+      batteryLifeYr: Number(assumption.battery_life_yr) || 10,
+      electricityEscalation: Number(assumption.electricity_escalation_yr) || 0.03,
+      discountRate: Number(assumption.discount_rate) || 0.05,
+      fitPrice: Number(assumption.fit_price) || 2.2,
+      maintenanceYr: Number(assumption.maintenance_yr) || 3500,
+      avgElecRate: Number(session.avg_elec_rate) || 4.0
+    };
+  }
+
+  function _mergeProductInputs(inputs, product) {
+    var merged = {};
+    for (var k in inputs) merged[k] = inputs[k];
+    merged.kWp = Number(product.kw) || 0;
+    merged.price = Number(product.price) || 0;
+    merged.batteryKwh = Number(product.battery_kwh) || 0;
+    merged.productId = product.product_id;
+    merged.productName = product.name || '';
+    merged.productPhase = product.electric_phase || '1';
+    return merged;
+  }
+
+  function _calcProductRow(inputs, product) {
+    var cashflowData = calcAnnualCashflow(inputs);
+    var kpi = calcKpi(cashflowData);
+    return {
+      product: product,
+      inputs: inputs,
+      flow: cashflowData.flow,
+      kpi: kpi,
+      cashflow: cashflowData,
+      _badges: []
+    };
+  }
+
+  // ==================== Financing Rank ====================
+
+  function rankFinancingPlans(loan, products, selectedProduct, plans, tiers, benchmarks, session, strategy) {
+    if (!strategy) strategy = 'net';
+    var assumptions = session._assumptions || [];
+    var assumption = _getDefaultAssumption(assumptions);
+
+    var downPct = Number(session.selected_down_percent) || 0;
+    var wantTaxDeduction = session.want_tax_deduction || false;
+    var hasCollateral = session.has_collateral || false;
+    var hasCreditCard = session.has_credit_card || false;
+
+    // filter feasible plans
+    var feasible = plans.filter(function (plan) {
+      if (plan.financing_type === 'cash') return false;
+      if (Number(plan.price_min) > loan) return false;
+      if (Number(plan.price_max) < loan) return false;
+      var downOptions = plan.down_percent_options.toString().split(',');
+      if (downOptions.indexOf(String(downPct)) === -1 && downOptions.indexOf('*') === -1) return false;
+      if (wantTaxDeduction && plan.tax_deduction_eligible !== true && plan.tax_deduction_eligible !== 'TRUE') return false;
+      if (!hasCollateral && (plan.requires_collateral === true || plan.requires_collateral === 'TRUE')) return false;
+      if (!hasCreditCard && (plan.requires_credit_card_of_bank === true || plan.requires_credit_card_of_bank === 'TRUE')) return false;
+      return true;
+    });
+
+    // generate term options per plan, calc metrics
+    var candidates = [];
+    feasible.forEach(function (plan) {
+      var termStep = Number(plan.term_step_months) || 12;
+      var termMin = Number(plan.term_min_months) || 12;
+      var termMax = Number(plan.term_max_months) || 240;
+
+      for (var term = termMin; term <= termMax; term += termStep) {
+        var result = calcInstallmentSchedule(loan, plan, tiers, term, downPct, benchmarks);
+        if (result.schedule.length === 0) continue;
+
+        var firstInstallment = result.schedule[0].installment;
+        var annualSavingYr1 = Number(session.annual_saving_yr1) || 0;
+        var monthlySaving = annualSavingYr1 / 12;
+        var monthlyNet = firstInstallment - monthlySaving;
+
+        // weighted avg rate
+        var weightedRate = _calcWeightedAvgRate(plan, tiers, term, downPct, benchmarks);
+
+        candidates.push({
+          plan: plan,
+          term: term,
+          downPct: downPct,
+          firstInstallment: firstInstallment,
+          avgInstallment: result.avgInstallment,
+          totalInterest: result.totalInterest,
+          monthlyNet: monthlyNet,
+          monthlySaving: monthlySaving,
+          weightedRate: weightedRate,
+          schedule: result.schedule
+        });
+      }
+    });
+
+    // sort by strategy
+    var sortFn;
+    switch (strategy) {
+      case 'net':
+        sortFn = function (a, b) { return a.monthlyNet - b.monthlyNet; };
+        break;
+      case 'lowest_rate':
+        sortFn = function (a, b) { return a.weightedRate - b.weightedRate; };
+        break;
+      case 'lowest_monthly':
+        sortFn = function (a, b) { return a.firstInstallment - b.firstInstallment; };
+        break;
+      case 'lowest_total_interest':
+        sortFn = function (a, b) { return a.totalInterest - b.totalInterest; };
+        break;
+      default:
+        sortFn = function (a, b) { return a.monthlyNet - b.monthlyNet; };
+    }
+
+    candidates.sort(sortFn);
+    return candidates.slice(0, 5);
+  }
+
+  function _calcWeightedAvgRate(plan, tiers, termMonths, downPct, benchmarks) {
+    var planTiers = _filterTiers(tiers, plan.plan_id, termMonths, downPct);
+    if (planTiers.length === 0) return 0;
+    var totalMonths = 0;
+    var weightedSum = 0;
+    planTiers.forEach(function (t) {
+      var months = t.to_month - t.from_month + 1;
+      var rate = _resolveTierRate(t, benchmarks);
+      weightedSum += rate * months;
+      totalMonths += months;
+    });
+    return totalMonths > 0 ? weightedSum / totalMonths : 0;
+  }
+
+  // ==================== Tariff / Bill helpers ====================
+
+  function inferKwhFromBillLocal(bill, authority, tariffs) {
+    if (bill <= 0) return { kWh: 0, avgRate: 0, tariff_id: '' };
+
+    var filtered = tariffs.filter(function (t) {
+      return t.authority === authority;
+    });
+
+    if (filtered.length === 0) return { kWh: 0, avgRate: 0, tariff_id: '' };
+
+    // group by tariff_code
+    var codes = {};
+    filtered.forEach(function (t) {
+      if (!codes[t.tariff_code]) codes[t.tariff_code] = [];
+      codes[t.tariff_code].push(t);
+    });
+
+    var bestResult = null;
+    var bestDiff = Infinity;
+
+    for (var code in codes) {
+      var tiers = codes[code].sort(function (a, b) { return a.from_kwh - b.from_kwh; });
+      var serviceCharge = Number(tiers[0].service_charge) || 0;
+
+      var lo = 0, hi = 5000;
+      for (var iter = 0; iter < 50; iter++) {
+        var mid = (lo + hi) / 2;
+        var calcBill = _calcProgressiveBillLocal(mid, tiers, serviceCharge);
+        if (calcBill < bill) { lo = mid; } else { hi = mid; }
+      }
+      var kWh = Math.round((lo + hi) / 2 * 100) / 100;
+      var calcBillFinal = _calcProgressiveBillLocal(kWh, tiers, serviceCharge);
+      var diff = Math.abs(calcBillFinal - bill);
+
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestResult = {
+          kWh: kWh,
+          avgRate: kWh > 0 ? Math.round(calcBillFinal / kWh * 10000) / 10000 : 0,
+          tariff_id: tiers[0].tariff_id
+        };
+      }
+    }
+
+    return bestResult || { kWh: 0, avgRate: 0, tariff_id: '' };
+  }
+
+  function _calcProgressiveBillLocal(kWh, tiers, serviceCharge) {
+    var total = serviceCharge;
+    var remaining = kWh;
+    for (var i = 0; i < tiers.length; i++) {
+      if (remaining <= 0) break;
+      var from = Number(tiers[i].from_kwh);
+      var to = Number(tiers[i].to_kwh);
+      var rate = Number(tiers[i].rate_per_kwh);
+      var ft = Number(tiers[i].ft_charge) || 0;
+      var blockSize = Math.min(remaining, to - from + 1);
+      total += blockSize * (rate + ft);
+      remaining -= blockSize;
+    }
+    return total;
+  }
+
+  // ==================== Self-test ====================
+
+  function selfTest() {
+    // Scenario 1: Design doc defaults (PR=0.85, FiT OFF, maint 3500)
+    var inputsDefault = {
+      kWp: 5, PSH: 4.5, PR: 0.85, monthlyKwh: 600, dayFraction: 0.4,
+      batteryKwh: 0, includeFit: false, panelDegradation: 0.005,
+      systemLifeYr: 25, electricityEscalation: 0.03, discountRate: 0.05,
+      fitPrice: 2.2, maintenanceYr: 3500, avgElecRate: 4.48, price: 135000
+    };
+
+    // Scenario 2: Excel-matching (PR=0.9, FiT ON, no maint)
+    var inputsExcel = {
+      kWp: 5, PSH: 4.5, PR: 0.9, monthlyKwh: 600, dayFraction: 0.4,
+      batteryKwh: 0, includeFit: true, panelDegradation: 0.005,
+      systemLifeYr: 25, electricityEscalation: 0.03, discountRate: 0.05,
+      fitPrice: 2.2, maintenanceYr: 0, avgElecRate: 4.48, price: 135000
+    };
+
+    var flowD = calcEnergyFlow(inputsDefault);
+    var cfD = calcAnnualCashflow(inputsDefault);
+    var kpiD = calcKpi(cfD);
+
+    var flowE = calcEnergyFlow(inputsExcel);
+    var cfE = calcAnnualCashflow(inputsExcel);
+    var kpiE = calcKpi(cfE);
+
+    return {
+      designDocDefaults: {
+        solarDaily: Math.round(flowD.solarDaily * 100) / 100,
+        payback: kpiD.payback ? Math.round(kpiD.payback * 100) / 100 : null,
+        npv: Math.round(kpiD.npv),
+        annualSavingYr1: Math.round(kpiD.annualSavingYr1)
+      },
+      excelParams: {
+        solarDaily: Math.round(flowE.solarDaily * 100) / 100,
+        payback: kpiE.payback ? Math.round(kpiE.payback * 100) / 100 : null,
+        npv: Math.round(kpiE.npv),
+        annualSavingYr1: Math.round(kpiE.annualSavingYr1)
+      }
+    };
+  }
+
+  // ==================== Public API ====================
+
+  return {
+    calcEnergyFlow: calcEnergyFlow,
+    calcAnnualCashflow: calcAnnualCashflow,
+    calcKpi: calcKpi,
+    calcInstallmentSchedule: calcInstallmentSchedule,
+    buildSystemComparison: buildSystemComparison,
+    rankFinancingPlans: rankFinancingPlans,
+    inferKwhFromBill: inferKwhFromBillLocal,
+    selfTest: selfTest
+  };
+
+})();
+</script>
