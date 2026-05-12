@@ -399,14 +399,16 @@
                         <h5 class="card-title-custom">ค้นหา session เดิม หรือ สร้างใหม่</h5>
                         <div class="row g-3">
                             <div class="col-12">
+                                <label class="form-label fw-bold">ค้นหา session เดิม</label>
                                 <div class="position-relative">
-                                    <input type="text" id="roi_searchBox" class="form-control" placeholder="พิมพ์ชื่อลูกค้าหรือเลข session..." oninput="roiSearchSessions()">
+                                    <input type="text" id="roi_searchBox" class="form-control" placeholder="พิมพ์ชื่อลูกค้า, เลขที่, หรือ session ID..." oninput="roiSearchSessions()">
                                 </div>
-                                <div id="roi_searchResults" class="list-group position-relative shadow-sm mt-2 d-none" style="max-height:250px;overflow-y:auto;"></div>
+                                <div id="roi_searchResults" class="list-group shadow-sm mt-2 d-none" style="max-height:250px;overflow-y:auto;border-radius:12px;"></div>
+                                <button class="btn btn-sm btn-outline-ocean mt-2 w-100" onclick="roiLoadAllSessions()">แสดง session ทั้งหมด</button>
                             </div>
                             <div class="col-12 mt-3">
                                 <button class="btn btn-ocean btn-lg w-100" onclick="roiNewSession()">
-                                    <i class="bi bi-plus-circle me-2"></i> สร้าง session ใหม่
+                                    + สร้าง session ใหม่
                                 </button>
                             </div>
                         </div>
@@ -541,24 +543,28 @@
 
                             <!-- Sub-panel: Appliance Picker -->
                             <div class="col-12 d-none" id="roi_splitAppliance">
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>เครื่องใช้ไฟ</th>
-                                                <th style="width:70px;">จำนวน</th>
-                                                <th style="width:80px;">Watt</th>
-                                                <th style="width:70px;">ชม.(วัน)</th>
-                                                <th style="width:70px;">ชม.(คืน)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="roi_applianceBody"></tbody>
-                                    </table>
+                                <label class="form-label fw-bold">เลือกเครื่องใช้ไฟฟ้า</label>
+                                <div class="position-relative mb-2">
+                                    <input type="text" id="roi_appSearch" class="form-control" placeholder="ค้นหาเครื่องใช้ไฟ... เช่น แอร์, ตู้เย็น, ทีวี" oninput="roiFilterAppliances()">
+                                    <div id="roi_appDropdown" class="list-group shadow-sm d-none" style="position:absolute;z-index:1000;max-height:220px;overflow-y:auto;width:100%;border-radius:12px;margin-top:4px;"></div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-ocean mt-2" onclick="roiAddApplianceRow()">+ เพิ่มแถว</button>
-                                <div id="roi_applianceSummary" class="alert alert-info mt-2 d-none">
-                                    กลางวัน: <strong id="roi_appDayKwh">0</strong> kWh
-                                    &nbsp;|&nbsp; กลางคืน: <strong id="roi_appNightKwh">0</strong> kWh
+                                <div id="roi_applianceBody"></div>
+                                <button class="btn btn-sm btn-outline-ocean mt-2" onclick="roiAddCustomAppliance()">+ เพิ่มเครื่องใช้ไฟเอง</button>
+                                <div id="roi_applianceSummary" class="alert alert-info mt-2 d-none" style="border-radius:12px;">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-muted">กลางวัน</small><br>
+                                            <strong id="roi_appDayKwh">0</strong> kWh
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">กลางคืน</small><br>
+                                            <strong id="roi_appNightKwh">0</strong> kWh
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">รวม</small><br>
+                                            <strong id="roi_appTotalKwh">0</strong> kWh
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -582,6 +588,18 @@
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="roi_existingSolar" onchange="roiScheduleAutoSave()">
                                     <label class="form-check-label fw-bold" for="roi_existingSolar">มีแผงโซลาร์เซลล์อยู่แล้ว</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    สัดส่วนหลังคาที่รับแสงได้
+                                    <span class="badge bg-info text-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="บางบ้านมีต้นไม้บัง หรือหลังคาไม่ได้รับแสงเต็มที่ เช่น ระเบียงบัง อาคารข้างเคียงบัง ให้ปรับเปอร์เซ็นต์ให้ตรงกับสภาพจริง">?</span>
+                                </label>
+                                <input type="range" id="roi_roofRatio" class="form-range" min="0.5" max="1" step="0.05" value="1" oninput="document.getElementById('roi_roofRatioValue').textContent = Math.round(this.value * 100) + '%'; roiScheduleAutoSave()">
+                                <div class="d-flex justify-content-between">
+                                    <small>50%</small>
+                                    <strong id="roi_roofRatioValue">100%</strong>
+                                    <small>100%</small>
                                 </div>
                             </div>
                             <div class="col-12 mt-3">
@@ -1185,6 +1203,16 @@
             });
 
             calcValidityDate();
+
+            // Close appliance dropdown when clicking outside
+            document.addEventListener('click', function (e) {
+                var dropdown = document.getElementById('roi_appDropdown');
+                var search = document.getElementById('roi_appSearch');
+                if (dropdown && dropdown.classList.contains('d-none')) return;
+                if (dropdown && !dropdown.contains(e.target) && e.target !== search) {
+                    dropdown.classList.add('d-none');
+                }
+            });
         });
 
         // ==================== Cascading Address ====================
@@ -1907,6 +1935,36 @@
                 .searchRoiSessions(query, 20);
         }
 
+        function roiLoadAllSessions() {
+            var container = document.getElementById('roi_searchResults');
+            container.innerHTML = '<div class="list-group-item text-muted">กำลังโหลด...</div>';
+            container.classList.remove('d-none');
+            google.script.run
+                .withSuccessHandler(function (results) {
+                    if (!results || results.length === 0) {
+                        container.innerHTML = '<div class="list-group-item text-muted">ยังไม่มี session</div>';
+                        return;
+                    }
+                    var html = '';
+                    for (var i = 0; i < results.length; i++) {
+                        var r = results[i];
+                        html += '<div class="list-group-item list-group-item-action" onclick="roiLoadSession(\'' + r.session_id + '\')">';
+                        html += '<strong>' + (r.customer_label || '-') + '</strong>';
+                        html += ' <small class="text-muted">(' + r.session_id + ')</small>';
+                        html += '<br><small>' + (r.status || '') + ' | ' + (r.last_updated || '') + '</small>';
+                        if (r.selected_kw) {
+                            html += ' <span class="badge bg-info">' + r.selected_kw + ' kWp</span>';
+                        }
+                        html += '</div>';
+                    }
+                    container.innerHTML = html;
+                })
+                .withFailureHandler(function (err) {
+                    container.innerHTML = '<div class="list-group-item text-danger">ผิดพลาด: ' + err.message + '</div>';
+                })
+                .searchRoiSessions('', 50);
+        }
+
         function roiLoadSession(id) {
             showLoading('กำลังโหลด session...');
             google.script.run
@@ -2060,49 +2118,122 @@
         }
 
         function roiPopulateAppliances() {
-            if (!roiBootstrap || !roiBootstrap.appliances) return;
-            var tbody = document.getElementById('roi_applianceBody');
-            if (tbody.children.length > 0) return; // already populated
-            var appliances = roiBootstrap.appliances;
-            for (var i = 0; i < appliances.length; i++) {
-                var a = appliances[i];
-                var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (a.appliance_name || a.name || '-') + '</td>' +
-                    '<td><input type="number" class="form-control form-control-sm app-qty" value="0" min="0" data-idx="' + i + '" oninput="roiCalcApplianceSummary()"></td>' +
-                    '<td>' + (a.watts || 0) + '</td>' +
-                    '<td><input type="number" class="form-control form-control-sm app-dayhrs" value="' + (a.day_hours || 0) + '" min="0" max="24" step="0.5" data-idx="' + i + '" oninput="roiCalcApplianceSummary()"></td>' +
-                    '<td><input type="number" class="form-control form-control-sm app-nighthrs" value="' + (a.night_hours || 0) + '" min="0" max="24" step="0.5" data-idx="' + i + '" oninput="roiCalcApplianceSummary()"></td>';
-                tbody.appendChild(tr);
-            }
+            // nothing to pre-populate — user searches and adds via dropdown
+            roiFilterAppliances();
         }
 
-        function roiAddApplianceRow() {
-            var tbody = document.getElementById('roi_applianceBody');
-            var tr = document.createElement('tr');
-            var idx = tbody.children.length;
-            tr.innerHTML = '<td><input type="text" class="form-control form-control-sm" placeholder="ชื่อเครื่องใช้ไฟ"></td>' +
-                '<td><input type="number" class="form-control form-control-sm app-qty" value="1" min="0"></td>' +
-                '<td><input type="number" class="form-control form-control-sm" placeholder="Watt" min="0"></td>' +
-                '<td><input type="number" class="form-control form-control-sm app-dayhrs" value="0" min="0" max="24" step="0.5"></td>' +
-                '<td><input type="number" class="form-control form-control-sm app-nighthrs" value="0" min="0" max="24" step="0.5"></td>';
-            tbody.appendChild(tr);
+        function roiFilterAppliances() {
+            if (!roiBootstrap || !roiBootstrap.appliances) return;
+            var search = document.getElementById('roi_appSearch');
+            var dropdown = document.getElementById('roi_appDropdown');
+            var q = search ? search.value.trim().toLowerCase() : '';
+            var appliances = roiBootstrap.appliances;
+
+            var filtered = [];
+            for (var i = 0; i < appliances.length; i++) {
+                var a = appliances[i];
+                var nameTh = (a.name_th || '').toString().toLowerCase();
+                var nameEn = (a.name_en || '').toString().toLowerCase();
+                if (!q || nameTh.indexOf(q) >= 0 || nameEn.indexOf(q) >= 0) {
+                    filtered.push({ idx: i, app: a });
+                }
+            }
+
+            if (filtered.length === 0) {
+                dropdown.classList.add('d-none');
+                return;
+            }
+
+            var html = '';
+            for (var j = 0; j < Math.min(filtered.length, 30); j++) {
+                var f = filtered[j];
+                var watts = Number(f.app.default_watts) || 0;
+                html += '<button type="button" class="list-group-item list-group-item-action py-2" onclick="roiAddAppliance(' + f.idx + ')">';
+                html += '<strong>' + (f.app.name_th || '-') + '</strong>';
+                html += ' <small class="text-muted">' + watts + 'W</small>';
+                html += '</button>';
+            }
+            dropdown.innerHTML = html;
+            dropdown.classList.remove('d-none');
+        }
+
+        function roiAddAppliance(idx) {
+            if (!roiBootstrap || !roiBootstrap.appliances || !roiBootstrap.appliances[idx]) return;
+            var a = roiBootstrap.appliances[idx];
+            var container = document.getElementById('roi_applianceBody');
+
+            var watts = Number(a.default_watts) || 0;
+            var dayHrs = Number(a.typical_day_hours) || 0;
+            var nightHrs = Number(a.typical_night_hours) || 0;
+            var duty = Number(a.typical_duty_cycle) || 1;
+
+            var card = document.createElement('div');
+            card.className = 'card mb-2 p-2';
+            card.style.borderRadius = '12px';
+            card.setAttribute('data-watts', watts);
+            card.setAttribute('data-duty', duty);
+
+            card.innerHTML =
+                '<div class="d-flex align-items-center mb-1">' +
+                    '<strong class="flex-grow-1">' + (a.name_th || '-') + '</strong>' +
+                    '<span class="badge bg-light text-dark">' + watts + 'W</span>' +
+                    '<button type="button" class="btn-close btn-sm ms-2" onclick="this.closest(\'.card\').remove(); roiCalcApplianceSummary();"></button>' +
+                '</div>' +
+                '<div class="row g-2">' +
+                    '<div class="col-3"><small class="text-muted">จำนวน</small><input type="number" class="form-control form-control-sm app-qty" value="1" min="1" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">Watt</small><input type="number" class="form-control form-control-sm app-watts" value="' + watts + '" min="0" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(วัน)</small><input type="number" class="form-control form-control-sm app-dayhrs" value="' + dayHrs + '" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(คืน)</small><input type="number" class="form-control form-control-sm app-nighthrs" value="' + nightHrs + '" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                '</div>';
+
+            container.appendChild(card);
+
+            // clear search + hide dropdown
+            document.getElementById('roi_appSearch').value = '';
+            document.getElementById('roi_appDropdown').classList.add('d-none');
+            roiCalcApplianceSummary();
+        }
+
+        function roiAddCustomAppliance() {
+            var container = document.getElementById('roi_applianceBody');
+            var card = document.createElement('div');
+            card.className = 'card mb-2 p-2';
+            card.style.borderRadius = '12px';
+            card.setAttribute('data-duty', '1');
+
+            card.innerHTML =
+                '<div class="d-flex align-items-center mb-1">' +
+                    '<input type="text" class="form-control form-control-sm flex-grow-1 me-2" placeholder="ชื่อเครื่องใช้ไฟ" value="">' +
+                    '<button type="button" class="btn-close btn-sm" onclick="this.closest(\'.card\').remove(); roiCalcApplianceSummary();"></button>' +
+                '</div>' +
+                '<div class="row g-2">' +
+                    '<div class="col-3"><small class="text-muted">จำนวน</small><input type="number" class="form-control form-control-sm app-qty" value="1" min="1" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">Watt</small><input type="number" class="form-control form-control-sm app-watts" value="" min="0" placeholder="Watt" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(วัน)</small><input type="number" class="form-control form-control-sm app-dayhrs" value="0" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(คืน)</small><input type="number" class="form-control form-control-sm app-nighthrs" value="0" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                '</div>';
+
+            container.appendChild(card);
+            roiCalcApplianceSummary();
         }
 
         function roiCalcApplianceSummary() {
-            var tbody = document.getElementById('roi_applianceBody');
-            var rows = tbody.children;
+            var container = document.getElementById('roi_applianceBody');
+            var cards = container.children;
             var dayTotal = 0;
             var nightTotal = 0;
-            for (var i = 0; i < rows.length; i++) {
-                var qty = parseFloat(rows[i].querySelector('.app-qty').value) || 0;
-                var watts = parseFloat(rows[i].cells[2].textContent) || 0;
-                var dayHrs = parseFloat(rows[i].querySelector('.app-dayhrs').value) || 0;
-                var nightHrs = parseFloat(rows[i].querySelector('.app-nighthrs').value) || 0;
-                dayTotal += qty * watts * dayHrs * 30 / 1000;
-                nightTotal += qty * watts * nightHrs * 30 / 1000;
+            for (var i = 0; i < cards.length; i++) {
+                var qty = parseFloat(cards[i].querySelector('.app-qty').value) || 0;
+                var watts = parseFloat(cards[i].querySelector('.app-watts').value) || 0;
+                var dayHrs = parseFloat(cards[i].querySelector('.app-dayhrs').value) || 0;
+                var nightHrs = parseFloat(cards[i].querySelector('.app-nighthrs').value) || 0;
+                var duty = parseFloat(cards[i].getAttribute('data-duty')) || 1;
+                dayTotal += qty * watts * dayHrs * duty * 30 / 1000;
+                nightTotal += qty * watts * nightHrs * duty * 30 / 1000;
             }
             document.getElementById('roi_appDayKwh').textContent = dayTotal.toFixed(1);
             document.getElementById('roi_appNightKwh').textContent = nightTotal.toFixed(1);
+            document.getElementById('roi_appTotalKwh').textContent = (dayTotal + nightTotal).toFixed(1);
             var summaryDiv = document.getElementById('roi_applianceSummary');
             if (dayTotal > 0 || nightTotal > 0) {
                 summaryDiv.classList.remove('d-none');
@@ -2123,6 +2254,18 @@
             var session = roiGetSessionObj();
             var assumptions = roiBootstrap.assumptions || [];
             var benchmarks = roiBootstrap.benchmarks || [];
+
+            // Apply roof ratio — reduces effective PSH by roof coverage %
+            var roofEl = document.getElementById('roi_roofRatio');
+            var roofRatio = roofEl ? parseFloat(roofEl.value) : 1;
+            if (roofRatio < 1 && assumptions.length > 0) {
+                assumptions = assumptions.map(function (a) {
+                    var copy = {};
+                    for (var k in a) copy[k] = a[k];
+                    copy.peak_sun_hours = (Number(copy.peak_sun_hours) || 4.5) * roofRatio;
+                    return copy;
+                });
+            }
 
             roiComparisonResults = RoiCalc.buildSystemComparison(session, roiBootstrap.products, assumptions, benchmarks);
             loadingDiv.classList.add('d-none');
