@@ -704,18 +704,88 @@
                         </div>
                     </div>
 
-                    <!-- ===== STEP 7: Presentation Mode (placeholder) ===== -->
+                    <!-- ===== STEP 7: Presentation Mode ===== -->
                     <div class="roi-step" id="roi-step-7">
                         <h5 class="card-title-custom">สรุปผลการวิเคราะห์ ROI</h5>
-                        <div id="roi_presentContent" class="text-center py-5">
-                            <div style="font-size:3rem; color: var(--ocean-main);">&#128200;</div>
-                            <h4>Presentation Mode</h4>
-                            <p class="text-muted">จะพัฒนาต่อใน chunk (d)</p>
-                            <div id="roi_presentPlaceholder" class="card bg-light p-4 mt-3">
-                                <p>session_id: <strong id="roi_presSessionId">-</strong></p>
-                                <p>ระบบที่เลือก: <strong id="roi_presProduct">-</strong></p>
-                                <p>Net Monthly: <strong id="roi_presNetMonthly">-</strong> บาท</p>
-                                <p>Payback: <strong id="roi_presPayback">-</strong> ปี</p>
+                        <div id="roi_presentContent" class="text-center">
+                            <p class="text-muted mb-4" id="roi_presCustomerLabel">-</p>
+
+                            <!-- Hero: Net Monthly -->
+                            <div class="card border-0 shadow-lg mb-4 p-4" style="border-radius: 20px; background: linear-gradient(135deg, #E0F2F1, #B2DFDB);">
+                                <p class="mb-1 text-muted" style="font-size: 1.1rem;">ผ่อนสุทธิเดือนละ</p>
+                                <div class="roi-hero-net" id="roi_presNetMonthly">-</div>
+                                <p class="mb-0 text-muted" style="font-size: 0.9rem;">
+                                    <span id="roi_presInstallment">-</span>
+                                    <span class="mx-1">&minus;</span>
+                                    <span id="roi_presSaving">-</span>
+                                    <span class="mx-1">+</span>
+                                    <span id="roi_presFitIncome">-</span>
+                                </p>
+                            </div>
+
+                            <!-- KPI Cards Row -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-4">
+                                    <div class="card p-3 h-100" style="border-radius: 15px;">
+                                        <div class="text-muted" style="font-size: 0.8rem;">ประหยัดรวม 25 ปี</div>
+                                        <div class="fw-bold fs-5" style="color: var(--ocean-dark);" id="roi_presTotalSaving">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="card p-3 h-100" style="border-radius: 15px;">
+                                        <div class="text-muted" style="font-size: 0.8rem;">คืนทุน</div>
+                                        <div class="fw-bold fs-5" style="color: var(--ocean-dark);" id="roi_presPayback">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="card p-3 h-100" style="border-radius: 15px;">
+                                        <div class="text-muted" style="font-size: 0.8rem;">NPV 25 ปี</div>
+                                        <div class="fw-bold fs-5" style="color: var(--ocean-dark);" id="roi_presNpv">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- System & Plan Summary -->
+                            <div class="row g-3 mb-4 text-start">
+                                <div class="col-md-6">
+                                    <div class="card p-3" style="border-radius: 15px; border-left: 4px solid var(--ocean-main);">
+                                        <div class="text-muted small">ระบบที่เลือก</div>
+                                        <div class="fw-bold" id="roi_presProduct">-</div>
+                                        <div class="text-muted small" id="roi_presProductDetail">-</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card p-3" style="border-radius: 15px; border-left: 4px solid var(--ocean-main);">
+                                        <div class="text-muted small">แผนสินเชื่อ</div>
+                                        <div class="fw-bold" id="roi_presPlan">-</div>
+                                        <div class="text-muted small" id="roi_presPlanDetail">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cumulative Cashflow Chart (Canvas) -->
+                            <div class="card p-3 mb-4 text-start" style="border-radius: 15px;">
+                                <div class="text-muted small mb-2">กราฟสะสม 25 ปี (Cumulative Cashflow)</div>
+                                <canvas id="roi_presChart" width="600" height="250" style="width: 100%; max-height: 250px;"></canvas>
+                            </div>
+
+                            <!-- 12-Month Installment Table -->
+                            <div class="card p-3 mb-4 text-start" style="border-radius: 15px;">
+                                <div class="text-muted small mb-2">ตารางผ่อน 12 เดือนแรก</div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0 roi-compare-table">
+                                        <thead>
+                                            <tr>
+                                                <th>เดือน</th>
+                                                <th class="text-end">ค่างวด</th>
+                                                <th class="text-end">เงินต้น</th>
+                                                <th class="text-end">ดอกเบี้ย</th>
+                                                <th class="text-end">คงเหลือ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="roi_presScheduleBody"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between mt-4">
@@ -1791,6 +1861,11 @@
             if (n === 3 && roiBootstrap && roiBootstrap.appliances) {
                 roiPopulateAppliances();
             }
+
+            // Render presentation when entering step 7
+            if (n === 7) {
+                roiRenderPresentation();
+            }
         }
 
         function roiSearchSessions() {
@@ -2212,16 +2287,8 @@
             if (cards[idx]) cards[idx].classList.add('selected');
             document.getElementById('roi_btnToPresent').disabled = false;
 
-            // Update presentation placeholder
-            if (roiFinancingResults[idx]) {
-                var plan = roiFinancingResults[idx];
-                document.getElementById('roi_presNetMonthly').textContent = Math.round(plan.monthlyNet || 0).toLocaleString();
-            }
-            if (roiSelectedProductIdx >= 0 && roiComparisonResults[roiSelectedProductIdx]) {
-                var prod = roiComparisonResults[roiSelectedProductIdx];
-                document.getElementById('roi_presProduct').textContent = prod.product.product_name || prod.product.name || '-';
-                document.getElementById('roi_presPayback').textContent = (prod.payback || prod.paybackYears || 0).toFixed(1);
-            }
+            // Presentation will be fully rendered when step 7 is shown
+            roiScheduleAutoSave();
             roiScheduleAutoSave();
         }
 
@@ -2238,7 +2305,9 @@
                     if (res && res.status === 'success' && res.session_id) {
                         if (!roiSession) roiSession = {};
                         roiSession.session_id = res.session_id;
-                        document.getElementById('roi_presSessionId').textContent = res.session_id;
+                        // session saved
+                        if (!roiSession) roiSession = {};
+                        roiSession.session_id = res.session_id;
                     }
                 })
                 .withFailureHandler(function (err) {
@@ -2316,6 +2385,192 @@
             obj.assumption_id_fk = 'DEFAULT';
 
             return obj;
+        }
+
+        // ==================== Presentation Mode ====================
+
+        function roiRenderPresentation() {
+            if (roiSelectedProductIdx < 0 || !roiComparisonResults[roiSelectedProductIdx]) return;
+            if (roiSelectedPlanIdx < 0 || !roiFinancingResults[roiSelectedPlanIdx]) return;
+
+            var prodResult = roiComparisonResults[roiSelectedProductIdx];
+            var planResult = roiFinancingResults[roiSelectedPlanIdx];
+            var product = prodResult.product || {};
+            var plan = planResult.plan || {};
+
+            // Customer label
+            var label = document.getElementById('roi_customerLabel');
+            document.getElementById('roi_presCustomerLabel').textContent = label ? label.value : '';
+
+            // Hero: Net Monthly
+            var netMonthly = Math.round(planResult.monthlyNet || 0);
+            var netEl = document.getElementById('roi_presNetMonthly');
+            netEl.textContent = netMonthly.toLocaleString() + ' ฿';
+            netEl.style.color = netMonthly <= 0 ? '#2e7d32' : '#c62828';
+
+            // Breakdown line
+            var installment = Math.round(planResult.firstInstallment || 0);
+            var saving = Math.round(planResult.monthlySaving || 0);
+            document.getElementById('roi_presInstallment').textContent = 'ผ่อน ' + installment.toLocaleString() + ' ฿';
+            document.getElementById('roi_presSaving').textContent = 'ประหยัด ' + saving.toLocaleString() + ' ฿';
+            document.getElementById('roi_presFitIncome').textContent = roiSession && roiSession.include_fit ? 'ขายไฟคืน +0 ฿' : '';
+
+            // KPI cards
+            var kpi = prodResult.kpi || {};
+            var totalSaving = 0;
+            if (prodResult.cashflow && prodResult.cashflow.years) {
+                for (var y = 0; y < prodResult.cashflow.years.length; y++) {
+                    totalSaving += prodResult.cashflow.years[y].saving;
+                }
+            }
+            document.getElementById('roi_presTotalSaving').textContent = Math.round(totalSaving).toLocaleString() + ' ฿';
+            document.getElementById('roi_presPayback').textContent = kpi.payback ? kpi.payback.toFixed(1) + ' ปี' : '-';
+            document.getElementById('roi_presNpv').textContent = Math.round(kpi.npv || 0).toLocaleString() + ' ฿';
+
+            // System summary
+            document.getElementById('roi_presProduct').textContent = product.name || product.product_name || '-';
+            var prodDetail = (product.kw || product.kWp || 0) + ' kWp';
+            if (product.battery_kwh > 0) prodDetail += ' + แบต ' + product.battery_kwh + ' kWh';
+            prodDetail += ' | ราคา ' + (product.price || 0).toLocaleString() + ' ฿';
+            document.getElementById('roi_presProductDetail').textContent = prodDetail;
+
+            // Plan summary
+            document.getElementById('roi_presPlan').textContent = plan.bank_label_th || plan.bank_code || '-';
+            var planDetail = plan.product_name_th || '';
+            planDetail += ' | ผ่อน ' + (planResult.term || 0) + ' เดือน';
+            planDetail += ' | ดาวน์ ' + Math.round((planResult.downPct || 0) * 100) + '%';
+            document.getElementById('roi_presPlanDetail').textContent = planDetail;
+
+            // Draw chart
+            roiDrawCashflowChart(prodResult);
+
+            // 12-month schedule table
+            roiRenderScheduleTable(planResult);
+        }
+
+        function roiDrawCashflowChart(prodResult) {
+            var canvas = document.getElementById('roi_presChart');
+            if (!canvas || !prodResult.cashflow || !prodResult.cashflow.years) return;
+            var ctx = canvas.getContext('2d');
+            var years = prodResult.cashflow.years;
+            var w = canvas.width;
+            var h = canvas.height;
+            var padding = { top: 20, right: 20, bottom: 30, left: 60 };
+            var chartW = w - padding.left - padding.right;
+            var chartH = h - padding.top - padding.bottom;
+
+            // Find min/max cumulative
+            var minCum = 0, maxCum = 0;
+            for (var i = 0; i < years.length; i++) {
+                if (years[i].cumulative < minCum) minCum = years[i].cumulative;
+                if (years[i].cumulative > maxCum) maxCum = years[i].cumulative;
+            }
+            var range = maxCum - minCum;
+            if (range === 0) range = 1;
+
+            // Clear
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#FAFAFA';
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid lines
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = 0.5;
+            for (var g = 0; g <= 4; g++) {
+                var gy = padding.top + chartH - (g / 4) * chartH;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, gy);
+                ctx.lineTo(w - padding.right, gy);
+                ctx.stroke();
+            }
+
+            // Zero line
+            var zeroY = padding.top + chartH - ((0 - minCum) / range) * chartH;
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, zeroY);
+            ctx.lineTo(w - padding.right, zeroY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw area + line
+            var stepW = chartW / (years.length - 1);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, zeroY);
+            for (var i = 0; i < years.length; i++) {
+                var x = padding.left + i * stepW;
+                var y = padding.top + chartH - ((years[i].cumulative - minCum) / range) * chartH;
+                if (i === 0) ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.lineTo(padding.left + (years.length - 1) * stepW, zeroY);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(38, 166, 154, 0.15)';
+            ctx.fill();
+
+            // Line
+            ctx.beginPath();
+            for (var i = 0; i < years.length; i++) {
+                var x = padding.left + i * stepW;
+                var y = padding.top + chartH - ((years[i].cumulative - minCum) / range) * chartH;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = '#00897B';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Payback dot
+            if (prodResult.kpi && prodResult.kpi.payback) {
+                var pbIdx = prodResult.kpi.payback;
+                var pbX = padding.left + (pbIdx - 1) * stepW;
+                ctx.beginPath();
+                ctx.arc(pbX, zeroY, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FF6F00';
+                ctx.fill();
+                ctx.fillStyle = '#FF6F00';
+                ctx.font = '11px Krub';
+                ctx.fillText('คืนทุน', pbX - 12, zeroY - 10);
+            }
+
+            // X-axis labels
+            ctx.fillStyle = '#999';
+            ctx.font = '10px Krub';
+            for (var i = 0; i < years.length; i += 5) {
+                var x = padding.left + i * stepW;
+                ctx.fillText('ปี ' + (i + 1), x - 10, h - 5);
+            }
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            var labels = [minCum, minCum + range * 0.25, minCum + range * 0.5, minCum + range * 0.75, maxCum];
+            for (var i = 0; i < labels.length; i++) {
+                var y = padding.top + chartH - (i / 4) * chartH;
+                ctx.fillText(Math.round(labels[i] / 1000) + 'k', padding.left - 5, y + 3);
+            }
+            ctx.textAlign = 'left';
+        }
+
+        function roiRenderScheduleTable(planResult) {
+            var tbody = document.getElementById('roi_presScheduleBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            var schedule = planResult.schedule || [];
+            var showMonths = Math.min(12, schedule.length);
+            for (var m = 0; m < showMonths; m++) {
+                var row = schedule[m];
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + row.month + '</td>' +
+                    '<td class="text-end">' + Math.round(row.installment).toLocaleString() + '</td>' +
+                    '<td class="text-end">' + Math.round(row.principal).toLocaleString() + '</td>' +
+                    '<td class="text-end">' + Math.round(row.interest).toLocaleString() + '</td>' +
+                    '<td class="text-end">' + Math.round(row.balance || 0).toLocaleString() + '</td>';
+                tbody.appendChild(tr);
+            }
         }
 
     </script>
