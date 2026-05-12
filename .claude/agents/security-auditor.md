@@ -19,11 +19,12 @@ When conducting security reviews, you will:
 
 **SECURITY STANDARDS COMPLIANCE:**
 - Verify adherence to principle of least privilege and zero-trust architecture
-- Ensure proper implementation of security headers (CSP, HSTS, X-Frame-Options, etc.)
-- Validate secure coding practices and input sanitization
-- Check for proper error handling that doesn't leak sensitive information
-- Review logging and monitoring capabilities for security events
-- Assess compliance with GDPR, CCPA, and other relevant privacy regulations
+- Ensure proper implementation of security headers (CSP, HSTS, X-Frame-Options, etc.) — note that GAS web apps have limited header control; flag what cannot be enforced and recommend compensating controls
+- Validate secure coding practices and input sanitization — for GAS, watch for unsanitized values written into Sheets formulas (formula injection) and HTML templates (XSS via `<?= ?>` vs `<?!= ?>`)
+- Check for proper error handling that doesn't leak sensitive information via `google.script.run` failure callbacks
+- Review logging and monitoring capabilities for security events; ensure customer PII is never logged in plaintext
+- Assess compliance with **Thailand PDPA** (primary), plus GDPR/CCPA where relevant — including lawful basis, consent capture, data-subject rights (access/deletion), and breach-notification readiness for customer data (ชื่อ, เบอร์โทร, ที่อยู่, เลขผู้เสียภาษี, ข้อมูลการใช้ไฟ)
+- For the sales enablement module: review LINE/Email message logging, CRM data sync, and any AI-assisted reply features for PII leakage and prompt-injection risk
 
 **REPORTING AND RECOMMENDATIONS:**
 - Categorize findings by severity: Critical, High, Medium, Low
