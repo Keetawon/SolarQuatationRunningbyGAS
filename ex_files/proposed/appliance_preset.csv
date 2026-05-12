@@ -1,31 +1,55 @@
 appliance_id,name_th,name_en,category,default_watts,watt_options,inverter,typical_day_hours,typical_night_hours,typical_duty_cycle,notes,status
-APL-001,แอร์ 9000 BTU (Inverter),AC 9000 BTU Inverter,cooling,750,"600,750,900",TRUE,4,8,0.55,ห้องนอนเล็ก,active
-APL-002,แอร์ 12000 BTU (Inverter),AC 12000 BTU Inverter,cooling,1000,"850,1000,1150",TRUE,4,8,0.55,ห้องนอนกลาง/ห้องนั่งเล่นเล็ก,active
-APL-003,แอร์ 12000 BTU (ปกติ),AC 12000 BTU Non-Inverter,cooling,1200,"1100,1200,1400",FALSE,4,8,0.7,ห้องนอนกลาง รุ่นทั่วไป,active
-APL-004,แอร์ 18000 BTU (Inverter),AC 18000 BTU Inverter,cooling,1500,"1300,1500,1700",TRUE,4,8,0.55,ห้องนั่งเล่น/ห้องโถง,active
-APL-005,แอร์ 24000 BTU (Inverter),AC 24000 BTU Inverter,cooling,2200,"2000,2200,2500",TRUE,4,8,0.55,ห้องโถงใหญ่,active
-APL-006,ตู้เย็น 6 คิว,Fridge 6 cu.ft.,refrigeration,90,"80,90,120",FALSE,12,12,0.4,ทำงาน 24 ชม. duty cycle ต่ำ,active
-APL-007,ตู้เย็น 8.9 คิว,Fridge 8.9 cu.ft.,refrigeration,120,"100,120,150",FALSE,12,12,0.4,ขนาดยอดนิยม,active
-APL-008,ตู้เย็น 12 คิว,Fridge 12 cu.ft.,refrigeration,180,"150,180,220",FALSE,12,12,0.4,ขนาดใหญ่,active
-APL-009,ตู้เย็น 15 คิว 2 ประตู (Inverter),Fridge 15 cu.ft. Inverter,refrigeration,140,"120,140,180",TRUE,12,12,0.35,2 ประตู Inverter ประหยัดกว่า,active
-APL-010,ทีวี 32 นิ้ว LED,TV 32 inch LED,entertainment,50,"40,50,60",FALSE,2,4,1,,active
-APL-011,ทีวี 43 นิ้ว LED,TV 43 inch LED,entertainment,75,"70,80,90",FALSE,2,4,1,,active
-APL-012,ทีวี 55 นิ้ว LED,TV 55 inch LED,entertainment,120,"100,120,150",FALSE,2,4,1,,active
-APL-013,ทีวี 65 นิ้ว 4K,TV 65 inch 4K,entertainment,180,"150,180,220",FALSE,2,4,1,,active
-APL-014,พัดลม 16 นิ้ว,Fan 16 inch,cooling,55,"45,55,75",FALSE,6,8,1,,active
-APL-015,พัดลมไอเย็น,Air Cooler,cooling,150,"100,150,200",FALSE,4,6,1,,active
-APL-016,ไมโครเวฟ 25 ลิตร,Microwave 25L,kitchen,1000,"800,1000,1200",FALSE,0.3,0.2,1,ใช้สั้น ๆ ต่อวัน,active
-APL-017,เตาอบไฟฟ้า,Electric Oven,kitchen,1500,"1200,1500,2000",FALSE,0.5,0.3,1,,active
-APL-018,เครื่องซักผ้าฝาบน 10 kg,Washing Machine Top 10kg,laundry,500,"400,500,650",FALSE,1,0.5,0.5,ทำงานเป็นรอบ,active
-APL-019,เครื่องซักผ้าฝาหน้า + อบ,Washer Dryer Front Load,laundry,2200,"1800,2200,2800",FALSE,1,0.5,0.6,รวมโหมดอบ,active
-APL-020,เครื่องอบผ้าไฟฟ้า,Dryer Electric,laundry,2500,"2000,2500,3000",FALSE,0.5,0.5,1,,active
-APL-021,เครื่องทำน้ำอุ่น 4500W,Water Heater 4500W,bathroom,4500,"3500,4500,6000",FALSE,0.3,0.5,1,ใช้สั้น ๆ ต่อครั้ง,active
-APL-022,เครื่องทำน้ำร้อนหม้อต้ม (Storage),Storage Water Heater,bathroom,2500,"2000,2500,3500",FALSE,0.5,0.5,0.4,,active
-APL-023,ปั๊มน้ำ 250W,Water Pump 250W,pump,250,"200,250,400",FALSE,1,1,0.2,เปิดเมื่อใช้น้ำ duty cycle ต่ำ,active
-APL-024,ตู้น้ำเย็น,Water Dispenser,kitchen,100,"80,100,150",FALSE,12,12,0.3,,active
-APL-025,คอมพิวเตอร์ตั้งโต๊ะ,Desktop PC,it,300,"200,300,500",FALSE,4,2,1,,active
-APL-026,โน้ตบุ๊ก,Notebook,it,65,"45,65,90",FALSE,4,2,1,,active
-APL-027,หลอด LED 9W,LED Bulb 9W,lighting,9,"5,9,12,18",FALSE,1,6,1,รวมต่อบ้าน 10-20 ดวง,active
-APL-028,เครื่องชาร์จรถ EV (AC 7.4kW),EV Charger AC 7.4kW,ev,7400,"3500,7400,11000",FALSE,2,4,1,ปกติเซลล์ควรถามว่ามีรถ EV หรือไม่,active
-APL-029,หม้อหุงข้าวไฟฟ้า,Rice Cooker,kitchen,700,"500,700,1000",FALSE,0.3,0.3,1,,active
-APL-030,เครื่องดูดฝุ่น,Vacuum Cleaner,cleaning,1400,"1200,1400,1800",FALSE,0.2,0,1,ใช้ไม่กี่ครั้งต่อสัปดาห์,active
+APL-001,แอร์ 9000 BTU Inverter,AC 9000 BTU Inverter,cooling,750,600|750|900,TRUE,3,8,0.55,ห้องนอนเล็ก/ห้องนั่งเล่นเล็ก,active
+APL-002,แอร์ 12000 BTU Inverter,AC 12000 BTU Inverter,cooling,1000,850|1000|1150,TRUE,3,8,0.55,ห้องนอนกลาง — ยอดนิยม,active
+APL-003,แอร์ 18000 BTU Inverter,AC 18000 BTU Inverter,cooling,1500,1300|1500|1700,TRUE,3,8,0.55,ห้องนั่งเล่น/ห้องโถง,active
+APL-004,แอร์ 24000 BTU Inverter,AC 24000 BTU Inverter,cooling,2200,2000|2200|2500,TRUE,3,8,0.55,ห้องโถงใหญ่/ร้านค้า,active
+APL-005,แอร์ 30000 BTU Inverter,AC 30000 BTU Inverter,cooling,2800,2500|2800|3200,TRUE,3,8,0.55,ห้องขนาดใหญ่,active
+APL-006,แอร์ 36000 BTU Inverter,AC 36000 BTU Inverter,cooling,3200,2800|3200|3800,TRUE,3,8,0.55,ห้องโถง/ร้านค้าใหญ่,active
+APL-007,แอร์ 9000 BTU (ปกติ),AC 9000 BTU Non-Inverter,cooling,900,800|900|1000,FALSE,3,8,0.7,ห้องนอนเล็ก รุ่นปกติ,active
+APL-008,แอร์ 12000 BTU (ปกติ),AC 12000 BTU Non-Inverter,cooling,1200,1100|1200|1400,FALSE,3,8,0.7,ห้องนอนกลาง รุ่นปกติ,active
+APL-009,แอร์ 18000 BTU (ปกติ),AC 18000 BTU Non-Inverter,cooling,1900,1700|1900|2200,FALSE,3,8,0.7,ห้องนั่งเล่น รุ่นปกติ,active
+APL-010,แอร์ 24000 BTU (ปกติ),AC 24000 BTU Non-Inverter,cooling,2800,2500|2800|3200,FALSE,3,8,0.7,ห้องโถง รุ่นปกติ,active
+APL-011,ตู้เย็น 6 คิว (1 ประตู),Fridge 6 cu.ft. 1-door,refrigeration,90,80|90|120,FALSE,12,12,0.4,ทำงาน 24 ชม. หอพัก/คนเดียว,active
+APL-012,ตู้เย็น 8.9 คิว (1 ประตู),Fridge 8.9 cu.ft. 1-door,refrigeration,120,100|120|150,FALSE,12,12,0.4,ขนาดยอดนิยม,active
+APL-013,ตู้เย็น 12 คิว (2 ประตู),Fridge 12 cu.ft. 2-door,refrigeration,180,150|180|220,FALSE,12,12,0.4,ครอบครัวเล็ก,active
+APL-014,ตู้เย็น 15 คิว 2 ประตู Inverter,Fridge 15 cu.ft. Inverter,refrigeration,140,120|140|170,TRUE,12,12,0.35,ครอบครัวกลาง Inverter ประหยัด,active
+APL-015,ตู้เย็น 18 คิว 2 ประตู Inverter,Fridge 18 cu.ft. Inverter,refrigeration,160,140|160|200,TRUE,12,12,0.35,ครอบครัวใหญ่,active
+APL-016,ตู้เย็น 21 คิว 2 ประตู Inverter,Fridge 21 cu.ft. Inverter,refrigeration,180,160|180|220,TRUE,12,12,0.35,ครอบครัวใหญ่มาก,active
+APL-017,ทีวี 32 นิ้ว LED,TV 32 inch LED,entertainment,50,40|50|60,FALSE,2,4,1,ห้องนอน,active
+APL-018,ทีวี 43 นิ้ว LED,TV 43 inch LED,entertainment,75,65|75|90,FALSE,2,4,1,ยอดนิยม,active
+APL-019,ทีวี 50 นิ้ว LED,TV 50 inch LED,entertainment,100,85|100|120,FALSE,2,4,1,ห้องนั่งเล่น,active
+APL-020,ทีวี 55 นิ้ว 4K,TV 55 inch 4K,entertainment,120,100|120|150,FALSE,2,4,1,ห้องนั่งเล่น,active
+APL-021,ทีวี 65 นิ้ว 4K,TV 65 inch 4K,entertainment,180,150|180|220,FALSE,2,4,1,ห้องโฮมเธียร์เตอร์,active
+APL-022,ทีวี 75 นิ้ว 4K,TV 75 inch 4K,entertainment,250,200|250|300,FALSE,2,4,1,ห้องขนาดใหญ่,active
+APL-023,พัดลมตั้งโต๊ะ/กลาง 16 นิ้ว,Fan 16 inch,cooling,55,45|55|75,FALSE,6,8,1,ทุกห้อง,active
+APL-024,พัดลมตั้งพื้น 18 นิ้ว,Fan Stand 18 inch,cooling,65,55|65|90,FALSE,6,8,1,ห้องใหญ่,active
+APL-025,พัดลมไอเย็น,Air Cooler,cooling,150,100|150|200,FALSE,4,6,1,พัดลมไอน้ำ ใหญ่กว่าปกติ,active
+APL-026,หม้อหุงข้าวเล็ก (0.6-1L),Rice Cooker Small 0.6-1L,kitchen,400,350|400|500,FALSE,0.5,0.5,0.8,คนเดียว/หอพัก,active
+APL-027,หม้อหุงข้าวกลาง (1.5L),Rice Cooker Medium 1.5L,kitchen,700,500|700|900,FALSE,0.5,0.5,0.8,ครอบครัวเล็ก-กลาง,active
+APL-028,หม้อหุงข้าวใหญ่ (2L+),Rice Cooker Large 2L+,kitchen,1000,800|1000|1300,FALSE,0.5,0.5,0.8,ครอบครัวใหญ่/ร้าน,active
+APL-029,ไมโครเวฟ 20-25 ลิตร,Microwave 20-25L,kitchen,1000,800|1000|1200,FALSE,0.3,0.2,1,ใช้สั้น ๆ ต่อวัน,active
+APL-030,กาต้มน้ำไฟฟ้า 1.5-2L,Electric Kettle 1.5-2L,kitchen,1500,1200|1500|2200,FALSE,0.2,0.1,1,ต้มสั้น 3-5 นาที,active
+APL-031,เตาไฟฟ้า/เตาแม่เหล็ก (Induction) 1 เตา,Induction Cooker Single,kitchen,2000,1500|2000|2500,FALSE,0.5,0.5,0.8,ทำกินเอง/หอพัก,active
+APL-032,เตาไฟฟ้า/เตาแม่เหล็ก 2 เตา,Induction Cooker Double,kitchen,3500,3000|3500|4000,FALSE,0.5,0.5,0.7,ครัวขนาดกลาง,active
+APL-033,เตาอบไฟฟ้า,Electric Oven 30-40L,kitchen,1500,1200|1500|2000,FALSE,0.3,0.2,0.8,อบขนม/อาหาร,active
+APL-034,เครื่องทำน้ำอุ่นแบบทันใจ 3500W,Water Heater Tankless 3500W,bathroom,3500,3000|3500|4500,FALSE,0.2,0.3,1,อาบน้ำ 15-20 นาที,active
+APL-035,เครื่องทำน้ำอุ่นแบบทันใจ 4500W,Water Heater Tankless 4500W,bathroom,4500,3500|4500|6000,FALSE,0.2,0.3,1,แรงดันน้ำดี/บ้านใหญ่,active
+APL-036,เครื่องทำน้ำร้อนแบบต้ม (Storage) 40L,Storage Water Heater 40L,bathroom,2500,2000|2500|3000,FALSE,0.5,0.5,0.4,รักษาความร้อนตลอด,active
+APL-037,เครื่องซักผ้าฝาบน 8-10 kg,Washing Machine Top Load 8-10kg,laundry,500,400|500|650,FALSE,0.5|1,0|0.5,0.5,ทำงานเป็นรอบ ~1 ชม.,active
+APL-038,เครื่องซักผ้าฝาหน้า + อบ 9-11 kg,Washer-Dryer Front Load 9-11kg,laundry,2200,1800|2200|2800,TRUE,0.5|1,0|0.5,0.6,รวมโหมดอบ ใช้ไฟสูงขึ้น,active
+APL-039,เครื่องอบผ้าไฟฟ้า 7-9 kg,Dryer Electric 7-9kg,laundry,2500,2000|2500|3000,FALSE,0,0.5|1,1,อบอย่างเดียว ~2 ชม.,active
+APL-040,เตารีดไอน้ำ/เตารีดธรรมดา,Iron Steam/Dry,laundry,1000,800|1000|1800,FALSE,0.2,0,1,ใช้ 15-30 นาทีต่อครั้ง,active
+APL-041,ปั๊มน้ำอัตโนมัติ 150W,Water Pump Auto 150W,pump,150,100|150|200,FALSE,1,1,0.2,เปิดเมื่อใช้น้ำ duty cycle ต่ำ,active
+APL-042,ปั๊มน้ำอัตโนมัติ 250W,Water Pump Auto 250W,pump,250,200|250|400,FALSE,1,1,0.2,บ้านชั้น 2 ขึ้นไป,active
+APL-043,ตู้น้ำเย็น/เครื่องกรองน้ำ,Water Dispenser,kitchen,100,80|100|150,FALSE,12,12,0.3,ทำงาน 24 ชม. รักษาอุณหภูมิ,active
+APL-044,เครื่องดูดควันครัว,Range Hood,kitchen,250,200|250|350,FALSE,0.5,0.3,1,ทำกับข้าว,active
+APL-045,คอมพิวเตอร์ตั้งโต๊ะ (Desktop),Desktop PC,it,300,200|300|500,FALSE,4,2,1,ทำงาน/เล่นเกม,active
+APL-046,โน้ตบุ๊ก/แล็ปท็อป,Notebook/Laptop,it,65,45|65|90,FALSE,4,2,1,ชาร์จ + ใช้งาน,active
+APL-047,หลอด LED 9W (ต่อดวง),LED Bulb 9W per unit,lighting,9,5|9|12|18,FALSE,1,6,1,ต่อบ้าน 10-20 ดวง ใส่จำนวนดวง,active
+APL-048,หลอด LED Tube 18W (ต่อดวง),LED Tube 18W per unit,lighting,18,9|18|24,FALSE,1,6,1,หลอดยาว โรงรถ/ระเบียง,active
+APL-049,เครื่องชาร์จรถ EV (ชาร์จช้า 2.3kW ต่อปลั๊กบ้าน),EV Charger Portable 2.3kW,ev,2300,2000|2300|3000,FALSE,0,4|8,1,เสียบปลั๊กบ้านธรรมดา ชาร์จ 8-12 ชม.,active
+APL-050,เครื่องชาร์จรถ EV (AC 7.4kW Wallbox),EV Charger Wallbox AC 7.4kW,ev,7400,5000|7400|11000,FALSE,0,4|8,1,ต้องติดตั้ง Wallbox ชาร์จ 4-6 ชม.,active
+APL-051,เครื่องชาร์จรถ EV (AC 11kW Wallbox),EV Charger Wallbox AC 11kW,ev,11000,7400|11000|22000,FALSE,0,4|6,1,ชาร์จเร็ว AC รถที่รองรับ,active
+APL-052,เครื่องดูดฝุ่น,Vacuum Cleaner,cleaning,1400,1200|1400|1800,FALSE,0.2,0,1,ใช้ไม่กี่ครั้งต่อสัปดาห์,active
+APL-053,เครื่องฟอกอากาศ,Air Purifier,cooling,60,40|60|80,FALSE,8,8,0.5,ทำงานเกือบตลอด แต่กินไฟน้อย,active
+APL-054,ไดร์เป่าผม,Hair Dryer,bathroom,1200,800|1200|1800,FALSE,0.1|0.2,0,1,ใช้สั้น 5-15 นาที,active

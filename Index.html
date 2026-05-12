@@ -241,9 +241,9 @@
 
         <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="roi-tab" data-bs-toggle="tab" data-bs-target="#roi-helper" type="button" role="tab">&#9889; ROI Helper</button>
+              <button class="nav-link active" id="roi-tab" data-bs-toggle="tab" data-bs-target="#roi-helper" type="button" role="tab">&#9889; ROI Helper</button>
             </li>
-            <li class="nav-item" role="presentation"><button class="nav-link active" id="booking-tab"
+            <li class="nav-item d-none" role="presentation"><button class="nav-link" id="booking-tab"
                     data-bs-toggle="tab" data-bs-target="#booking" type="button" role="tab">📑 ระบบออกใบจอง</button>
             </li>
             <li class="nav-item" role="presentation"><button class="nav-link" id="quotation-tab" data-bs-toggle="tab"
@@ -361,7 +361,7 @@
             </div>
 
             <!-- ==================== TAB: ROI Helper ==================== -->
-            <div class="tab-pane fade" id="roi-helper" role="tabpanel">
+            <div class="tab-pane fade show active" id="roi-helper" role="tabpanel">
 
                 <!-- ROI Wizard Container -->
                 <div class="card p-3 p-md-4 bg-white" style="border-top: 5px solid var(--ocean-main) !important;">
@@ -798,7 +798,7 @@
             </div><!-- /roi-helper tab-pane -->
 
             <!-- ==================== TAB: ใบเสนอราคา ==================== -->
-            <div class="tab-pane fade show active" id="quotation" role="tabpanel">
+            <div class="tab-pane fade" id="quotation" role="tabpanel">
 
                 <!-- Draft Edit Bar -->
                 <div class="alert alert-edit mb-4 p-3 shadow-sm" id="q_editBar">
