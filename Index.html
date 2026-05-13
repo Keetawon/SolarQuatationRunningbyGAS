@@ -2823,6 +2823,15 @@
             var loan = selectedResult.product.price * (1 - (parseFloat(document.getElementById('roi_downPercent').value) || 0) / 100);
             var strategy = document.querySelector('input[name="roi_rankStrategy"]:checked').value;
 
+            console.log('[ROI Step 6] plans count:', (roiBootstrap.plans || []).length,
+                'tiers count:', (roiBootstrap.tiers || []).length,
+                'benchmarks:', (roiBootstrap.benchmarks || []).length,
+                'loan:', loan, 'downPct:', session.selected_down_percent,
+                'hasCollateral:', session.has_collateral, 'hasCreditCard:', session.has_credit_card);
+            if (roiBootstrap.plans && roiBootstrap.plans.length > 0) {
+                console.log('[ROI Step 6] first plan sample:', JSON.stringify(roiBootstrap.plans[0]).substring(0, 300));
+            }
+
             roiFinancingResults = RoiCalc.rankFinancingPlans(
                 loan,
                 roiBootstrap.products,
@@ -2833,6 +2842,8 @@
                 session,
                 strategy
             );
+
+            console.log('[ROI Step 6] results:', roiFinancingResults ? roiFinancingResults.length : 0);
 
             var container = document.getElementById('roi_financeCards');
             var noResult = document.getElementById('roi_noFinanceResult');
