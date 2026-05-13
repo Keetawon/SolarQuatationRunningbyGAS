@@ -516,7 +516,8 @@ function _sheetToObjects(sheetName) {
 }
 
 function getBootstrapData() {
-  var CACHE_KEY = 'roi_bootstrap_v1';
+  // Bump version when filter logic or shape changes, so cache invalidates automatically.
+  var CACHE_KEY = 'roi_bootstrap_v2';
   var CACHE_TTL = 600;
   var cache = CacheService.getScriptCache();
   var cached = cache.get(CACHE_KEY);
@@ -543,26 +544,23 @@ function getBootstrapData() {
     }
   }
 
-  // filter active only for relevant sheets
-  result.products = result.products.filter(function(p) {
-    return p.status === 'active' || p.status === 'Active';
-  });
-  result.plans = result.plans.filter(function(p) {
-    return p.status === 'active' || p.status === 'Active';
-  });
-  result.tiers = result.tiers; // return all, let client filter
-  result.benchmarks = result.benchmarks.filter(function(b) {
-    return b.status === 'active' || b.status === 'Active';
-  });
-  result.tariffs = result.tariffs.filter(function(t) {
-    return t.status === 'active' || t.status === 'Active';
-  });
-  result.appliances = result.appliances.filter(function(a) {
-    return a.status === 'active' || a.status === 'Active';
-  });
-  result.assumptions = result.assumptions.filter(function(a) {
-    return a.status === 'active' || a.status === 'Active';
-  });
+  // Permissive status filter: keep rows whose status is empty/missing OR active.
+  // Only exclude rows explicitly marked inactive/archived/disabled.
+  // (solar_products from package_ex.xlsx has no status column at all.)
+  function _isActive(row) {
+    var s = row && row.status;
+    if (s === undefined || s === null || s === '') return true;
+    s = s.toString().trim().toLowerCase();
+    if (s === 'inactive' || s === 'archived' || s === 'disabled' || s === 'deleted') return false;
+    return true;
+  }
+  result.products = result.products.filter(_isActive);
+  result.plans = result.plans.filter(_isActive);
+  // tiers: return all, let client filter by plan_id
+  result.benchmarks = result.benchmarks.filter(_isActive);
+  result.tariffs = result.tariffs.filter(_isActive);
+  result.appliances = result.appliances.filter(_isActive);
+  result.assumptions = result.assumptions.filter(_isActive);
 
   try {
     cache.put(CACHE_KEY, JSON.stringify(result), CACHE_TTL);
@@ -925,4 +923,65 @@ function _calcProgressiveBill(kWh, tiers, serviceCharge) {
     remaining -= blockSize;
   }
   return total;
+}
+
+// ==================== ROI Helper — Diagnostics ====================
+
+// Run this from the GAS editor (Run > diagRoi) to verify sheets are present.
+// Returns a report of which required sheets exist and their row counts.
+function diagRoi() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var required = [
+    'appliance_preset',
+    'solar_products',
+    'financing_plan',
+    'financing_rate_tier',
+    'rate_benchmark',
+    'roi_assumption',
+    'electricity_tariff',
+    'roi_session',
+    'roi_session_appliance'
+  ];
+  var report = { spreadsheetUrl: ss.getUrl(), sheets: {} };
+  required.forEach(function(name) {
+    var s = ss.getSheetByName(name);
+    if (s) {
+      var lastRow = s.getLastRow();
+      var lastCol = s.getLastColumn();
+      var headers = lastRow >= 1 ? s.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+      report.sheets[name] = {
+        exists: true,
+        rows: lastRow,
+        dataRows: Math.max(0, lastRow - 1),
+        cols: lastCol,
+        headers: headers
+      };
+    } else {
+      report.sheets[name] = { exists: false };
+    }
+  });
+  // Cache state
+  try {
+    var cache = CacheService.getScriptCache();
+    report.cache = {
+      bootstrap: cache.get('roi_bootstrap_v1') ? 'cached (' + cache.get('roi_bootstrap_v1').length + ' chars)' : 'empty'
+    };
+  } catch (ce) {
+    report.cache = { error: ce.message };
+  }
+  Logger.log(JSON.stringify(report, null, 2));
+  return report;
+}
+
+// Clear the ROI bootstrap cache (run from GAS editor after editing seed sheets).
+function clearRoiCache() {
+  try {
+    var c = CacheService.getScriptCache();
+    c.remove('roi_bootstrap_v1');
+    c.remove('roi_bootstrap_v2');
+    Logger.log('ROI bootstrap cache cleared.');
+    return { status: 'ok', message: 'cache cleared' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
 }
