@@ -1,9 +1,25 @@
 function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-      .evaluate()
+  var tmpl = HtmlService.createTemplateFromFile('Index');
+  // Resolved once per page render: lets the template skip ~700 lines of
+  // admin HTML/JS for non-admins so they don't download what they can't use.
+  tmpl.isAdmin = _isCurrentUserAdmin();
+  return tmpl.evaluate()
       .setTitle('Sena Solar - Sales System')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// Returns true if the current viewer's email is in the Config sheet's
+// admin_emails entry. If the Config row is missing entirely we return
+// true so a fresh deploy isn't locked out before setup; once an admin
+// list is configured, anyone not on it gets the non-admin bundle.
+function _isCurrentUserAdmin() {
+  var raw = getConfig('admin_emails');
+  if (!raw) return true; // unconfigured = open (matches _requireAdmin)
+  var email = '';
+  try { email = Session.getActiveUser().getEmail(); } catch (e) {}
+  var admins = raw.toString().split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+  return admins.indexOf((email || '').toLowerCase()) !== -1;
 }
 
 function include(filename) {
