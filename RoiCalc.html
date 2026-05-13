@@ -647,6 +647,75 @@ var RoiCalc = (function () {
     };
   }
 
+  // ==================== Monthly Breakdown (Step 7 dashboard) ====================
+  // Year-1 monthly breakdown of energy and money flow for the selected
+  // product + plan. Lets the UI explain WHERE the "ผ่อนสุทธิ" number comes
+  // from instead of just showing a single net.
+  function calcMonthlyBreakdown(prodResult, planResult, session) {
+    var flow = (prodResult && prodResult.flow) || {};
+    var inputs = (prodResult && prodResult.inputs) || {};
+    var product = (prodResult && prodResult.product) || {};
+
+    var MO = 365 / 12; // matches the annual calc convention
+
+    var solarKwhMo  = (flow.solarDaily || 0) * MO;
+    var selfKwhMo   = (flow.selfD      || 0) * MO;
+    var sellKwhMo   = (flow.sellD      || 0) * MO;
+    var buyKwhMo    = (flow.buyD       || 0) * MO;
+    var chargeKwhMo = (flow.chargeD    || 0) * MO;
+    var battOutKwhMo= (flow.battOut    || 0) * MO;
+    var dayDirectKwhMo = Math.max(0, selfKwhMo - battOutKwhMo);
+
+    var elecRate = Number(inputs.avgElecRate) || 4.0;
+    var fitPrice = Number(inputs.fitPrice) || 2.2;
+    var includeFit = inputs.includeFit === true || inputs.includeFit === 'TRUE';
+    var hasBattery = (flow.hasBattery === true) || (Number(product.battery_kwh) > 0);
+
+    var daySavingMo   = dayDirectKwhMo * elecRate;
+    var nightSavingMo = battOutKwhMo * elecRate;
+    var fitIncomeMo   = includeFit ? sellKwhMo * fitPrice : 0;
+    var totalSavingMo = daySavingMo + nightSavingMo;
+
+    // Prefer the user-entered bill — that's the number they recognise.
+    // Fall back to monthlyKwh × avgRate when bill is missing.
+    var currentBillMo = Number(session && session.monthly_bill) || (Number(inputs.monthlyKwh) || 0) * elecRate;
+    var newBillMo = Math.max(0, currentBillMo - totalSavingMo);
+
+    var installmentMo = 0;
+    if (planResult) {
+      installmentMo = Number(planResult.firstInstallment) || Number(planResult.monthlyPayment) || 0;
+    }
+
+    var outlayBefore = currentBillMo;
+    var outlayAfter  = newBillMo + installmentMo - fitIncomeMo;
+    var outlayDelta  = outlayAfter - outlayBefore;
+
+    return {
+      elecRate: elecRate,
+      fitPrice: fitPrice,
+      includeFit: includeFit,
+      hasBattery: hasBattery,
+      solarKwhMo: solarKwhMo,
+      dayDirectKwhMo: dayDirectKwhMo,
+      selfKwhMo: selfKwhMo,
+      sellKwhMo: sellKwhMo,
+      buyKwhMo: buyKwhMo,
+      chargeKwhMo: chargeKwhMo,
+      battOutKwhMo: battOutKwhMo,
+      buyCostMo: buyKwhMo * elecRate,
+      daySavingMo: daySavingMo,
+      nightSavingMo: nightSavingMo,
+      fitIncomeMo: fitIncomeMo,
+      totalSavingMo: totalSavingMo,
+      currentBillMo: currentBillMo,
+      newBillMo: newBillMo,
+      installmentMo: installmentMo,
+      outlayBefore: outlayBefore,
+      outlayAfter: outlayAfter,
+      outlayDelta: outlayDelta
+    };
+  }
+
   // ==================== Public API ====================
 
   return {
@@ -654,6 +723,7 @@ var RoiCalc = (function () {
     calcAnnualCashflow: calcAnnualCashflow,
     calcKpi: calcKpi,
     calcInstallmentSchedule: calcInstallmentSchedule,
+    calcMonthlyBreakdown: calcMonthlyBreakdown,
     buildSystemComparison: buildSystemComparison,
     rankFinancingPlans: rankFinancingPlans,
     inferKwhFromBill: inferKwhFromBillLocal,

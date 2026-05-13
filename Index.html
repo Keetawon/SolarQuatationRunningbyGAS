@@ -774,15 +774,133 @@
 
                             <!-- Hero: Net Monthly -->
                             <div class="card border-0 shadow-lg mb-4 p-4" style="border-radius: 20px; background: linear-gradient(135deg, #E0F2F1, #B2DFDB);">
-                                <p class="mb-1 text-muted" style="font-size: 1.1rem;">ผ่อนสุทธิเดือนละ</p>
+                                <p class="mb-1 text-muted" style="font-size: 1.1rem;" id="roi_presHeroLabel">รวมจ่ายต่อเดือน (หลังติดโซลาร์)</p>
                                 <div class="roi-hero-net" id="roi_presNetMonthly">-</div>
                                 <p class="mb-0 text-muted" style="font-size: 0.9rem;">
                                     <span id="roi_presInstallment">-</span>
-                                    <span class="mx-1">&minus;</span>
-                                    <span id="roi_presSaving">-</span>
                                     <span class="mx-1">+</span>
+                                    <span id="roi_presNewBill">-</span>
+                                    <span class="mx-1">&minus;</span>
                                     <span id="roi_presFitIncome">-</span>
                                 </p>
+                                <p class="mb-0 mt-2" style="font-size: 0.95rem;" id="roi_presHeroDeltaWrap">
+                                    <span class="badge bg-light text-dark" id="roi_presHeroDelta">-</span>
+                                </p>
+                            </div>
+
+                            <!-- NEW: Monthly Savings Breakdown -->
+                            <div class="card p-3 mb-4 text-start" style="border-radius: 15px;">
+                                <div class="d-flex justify-content-between align-items-end mb-3 flex-wrap">
+                                    <h6 class="mb-0 fw-bold" style="color: var(--ocean-dark);">รายละเอียดเงินสดต่อเดือน <small class="text-muted fw-normal">(ปีที่ 1)</small></h6>
+                                    <small class="text-muted">คำนวณที่ค่าไฟ <span id="roi_presElecRate">-</span> ฿/หน่วย<span id="roi_presFitRateWrap"> · FIT <span id="roi_presFitRate">-</span> ฿/หน่วย</span></small>
+                                </div>
+
+                                <!-- Savings pills (where the saving comes from) -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-4">
+                                        <div class="p-3 h-100" style="border-radius: 12px; background: #FFF8E1; border-left: 4px solid #FFB300;">
+                                            <div class="small text-muted">ประหยัดกลางวัน <span class="text-muted" title="โซลาร์ผลิตแล้วใช้ตรงเลย ไม่ผ่านแบต">(ใช้ตรง)</span></div>
+                                            <div class="fw-bold fs-5" id="roi_presDaySave">- ฿</div>
+                                            <div class="small text-muted" id="roi_presDayDetail">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4" id="roi_presNightWrap">
+                                        <div class="p-3 h-100" style="border-radius: 12px; background: #E8EAF6; border-left: 4px solid #3949AB;">
+                                            <div class="small text-muted">ประหยัดกลางคืน <span class="text-muted" title="แบตเตอรี่ปล่อยไฟกลางคืน">(จากแบต)</span></div>
+                                            <div class="fw-bold fs-5" id="roi_presNightSave">- ฿</div>
+                                            <div class="small text-muted" id="roi_presNightDetail">-</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4" id="roi_presFitWrap">
+                                        <div class="p-3 h-100" style="border-radius: 12px; background: #E0F7FA; border-left: 4px solid #00838F;">
+                                            <div class="small text-muted">รายได้ขายไฟคืน <span class="text-muted">(FIT)</span></div>
+                                            <div class="fw-bold fs-5" id="roi_presFitSave">- ฿</div>
+                                            <div class="small text-muted" id="roi_presFitDetail">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Money flow table -->
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr class="text-muted small">
+                                                <th>รายการ</th>
+                                                <th class="text-end">ก่อนติดโซลาร์</th>
+                                                <th class="text-end">หลังติดโซลาร์</th>
+                                                <th class="text-end">ผลต่าง</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>ค่าไฟ MEA/PEA</td>
+                                                <td class="text-end" id="roi_presBillBefore">-</td>
+                                                <td class="text-end" id="roi_presBillAfter">-</td>
+                                                <td class="text-end text-success" id="roi_presBillDelta">-</td>
+                                            </tr>
+                                            <tr id="roi_presFitRow">
+                                                <td>รายได้ขายไฟคืน (FIT)</td>
+                                                <td class="text-end text-muted">0 ฿</td>
+                                                <td class="text-end" id="roi_presFitCol">-</td>
+                                                <td class="text-end text-success" id="roi_presFitDeltaCol">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td>ค่าผ่อนระบบ</td>
+                                                <td class="text-end text-muted">0 ฿</td>
+                                                <td class="text-end" id="roi_presInstallmentCol">-</td>
+                                                <td class="text-end text-danger" id="roi_presInstallmentDelta">-</td>
+                                            </tr>
+                                            <tr class="fw-bold border-top">
+                                                <td>รวมจ่ายต่อเดือน</td>
+                                                <td class="text-end" id="roi_presOutlayBefore">-</td>
+                                                <td class="text-end" id="roi_presOutlayAfter">-</td>
+                                                <td class="text-end" id="roi_presOutlayDelta">-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- NEW: Energy flow strip -->
+                            <div class="card p-3 mb-4 text-start" style="border-radius: 15px;">
+                                <h6 class="mb-3 fw-bold" style="color: var(--ocean-dark);">การไหลของพลังงาน <small class="text-muted fw-normal">(kWh ต่อเดือน)</small></h6>
+                                <div class="row g-3 small">
+                                    <div class="col-md-3 col-6">
+                                        <div class="text-muted">โซลาร์ผลิต</div>
+                                        <div class="fw-bold fs-5" style="color: #F57C00;"><span id="roi_presSolarKwh">-</span></div>
+                                        <div class="text-muted small">kWh / เดือน</div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="text-muted">ใช้เอง</div>
+                                        <div class="fw-bold fs-5 text-success"><span id="roi_presSelfKwh">-</span></div>
+                                        <div class="text-muted small"><span id="roi_presSelfPct">-</span>% ของที่ผลิต</div>
+                                    </div>
+                                    <div class="col-md-3 col-6" id="roi_presSellBlock">
+                                        <div class="text-muted">ขายส่วนเกิน</div>
+                                        <div class="fw-bold fs-5" style="color: #00838F;"><span id="roi_presSellKwh">-</span></div>
+                                        <div class="text-muted small" id="roi_presSellDetail">-</div>
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <div class="text-muted">ยังต้องซื้อจากการไฟฟ้า</div>
+                                        <div class="fw-bold fs-5 text-danger"><span id="roi_presBuyKwh">-</span></div>
+                                        <div class="text-muted small">≈ <span id="roi_presBuyCost">-</span> ฿/เดือน</div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 small mt-1" id="roi_presBattRow">
+                                    <div class="col-12">
+                                        <div class="alert mb-0 py-2 px-3" style="background:#F3E5F5; border-left:4px solid #7B1FA2; border-radius:8px;">
+                                            <span class="text-muted">การไหลผ่านแบต:</span>
+                                            <strong><span id="roi_presChargeKwh">-</span> kWh</strong> เข้า →
+                                            <strong><span id="roi_presBattOutKwh">-</span> kWh</strong> ออก
+                                            <span class="text-muted small">(สูญเสีย Round-trip <span id="roi_presBattLoss">-</span>%)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="roi_presHintWrap" class="mt-2" style="display:none;">
+                                    <div class="alert alert-warning py-2 px-3 mb-0 small">
+                                        <strong>หมายเหตุ:</strong> <span id="roi_presHint"></span>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- KPI Cards Row -->
@@ -2919,23 +3037,137 @@
             var planResult = roiFinancingResults[roiSelectedPlanIdx];
             var product = prodResult.product || {};
             var plan = planResult.plan || {};
+            var session = roiGetSessionObj();
+            var bd = RoiCalc.calcMonthlyBreakdown(prodResult, planResult, session);
 
             // Customer label
             var label = document.getElementById('roi_customerLabel');
             document.getElementById('roi_presCustomerLabel').textContent = label ? label.value : '';
 
-            // Hero: Net Monthly
-            var netMonthly = Math.round(planResult.monthlyNet || 0);
+            // Hero: total monthly outlay AFTER solar
+            var heroNet = Math.round(bd.outlayAfter);
             var netEl = document.getElementById('roi_presNetMonthly');
-            netEl.textContent = netMonthly.toLocaleString() + ' ฿';
-            netEl.style.color = netMonthly <= 0 ? '#2e7d32' : '#c62828';
+            netEl.textContent = heroNet.toLocaleString() + ' ฿';
+            netEl.style.color = bd.outlayDelta <= 0 ? '#2e7d32' : '#c62828';
+            document.getElementById('roi_presInstallment').textContent = 'ผ่อน ' + Math.round(bd.installmentMo).toLocaleString() + ' ฿';
+            document.getElementById('roi_presNewBill').textContent = 'ค่าไฟใหม่ ' + Math.round(bd.newBillMo).toLocaleString() + ' ฿';
+            if (bd.includeFit && bd.fitIncomeMo > 0) {
+                document.getElementById('roi_presFitIncome').textContent = 'ขายไฟคืน ' + Math.round(bd.fitIncomeMo).toLocaleString() + ' ฿';
+                document.getElementById('roi_presFitIncome').style.display = '';
+            } else {
+                document.getElementById('roi_presFitIncome').style.display = 'none';
+            }
+            var deltaBadge = document.getElementById('roi_presHeroDelta');
+            var deltaVal = Math.round(bd.outlayDelta);
+            if (deltaVal < 0) {
+                deltaBadge.textContent = 'จ่ายน้อยลงเดือนละ ' + Math.abs(deltaVal).toLocaleString() + ' ฿ เทียบกับก่อนติด';
+                deltaBadge.className = 'badge bg-success-subtle text-success';
+            } else if (deltaVal > 0) {
+                deltaBadge.textContent = 'จ่ายเพิ่มเดือนละ ' + deltaVal.toLocaleString() + ' ฿ (รวมค่าผ่อน) เทียบกับก่อนติด';
+                deltaBadge.className = 'badge bg-warning-subtle text-warning';
+            } else {
+                deltaBadge.textContent = 'เสมอตัวเทียบกับก่อนติด';
+                deltaBadge.className = 'badge bg-light text-dark';
+            }
 
-            // Breakdown line
-            var installment = Math.round(planResult.firstInstallment || 0);
-            var saving = Math.round(planResult.monthlySaving || 0);
-            document.getElementById('roi_presInstallment').textContent = 'ผ่อน ' + installment.toLocaleString() + ' ฿';
-            document.getElementById('roi_presSaving').textContent = 'ประหยัด ' + saving.toLocaleString() + ' ฿';
-            document.getElementById('roi_presFitIncome').textContent = roiSession && roiSession.include_fit ? 'ขายไฟคืน +0 ฿' : '';
+            // ---------- Monthly breakdown section ----------
+            document.getElementById('roi_presElecRate').textContent = bd.elecRate.toFixed(2);
+            if (bd.includeFit) {
+                document.getElementById('roi_presFitRateWrap').style.display = '';
+                document.getElementById('roi_presFitRate').textContent = bd.fitPrice.toFixed(2);
+            } else {
+                document.getElementById('roi_presFitRateWrap').style.display = 'none';
+            }
+
+            document.getElementById('roi_presDaySave').textContent = Math.round(bd.daySavingMo).toLocaleString() + ' ฿';
+            document.getElementById('roi_presDayDetail').textContent = Math.round(bd.dayDirectKwhMo).toLocaleString() + ' kWh × ' + bd.elecRate.toFixed(2) + ' ฿';
+
+            if (bd.hasBattery) {
+                document.getElementById('roi_presNightWrap').style.display = '';
+                document.getElementById('roi_presNightSave').textContent = Math.round(bd.nightSavingMo).toLocaleString() + ' ฿';
+                document.getElementById('roi_presNightDetail').textContent = Math.round(bd.battOutKwhMo).toLocaleString() + ' kWh × ' + bd.elecRate.toFixed(2) + ' ฿';
+            } else {
+                document.getElementById('roi_presNightWrap').style.display = 'none';
+            }
+
+            if (bd.includeFit) {
+                document.getElementById('roi_presFitWrap').style.display = '';
+                document.getElementById('roi_presFitSave').textContent = Math.round(bd.fitIncomeMo).toLocaleString() + ' ฿';
+                document.getElementById('roi_presFitDetail').textContent = Math.round(bd.sellKwhMo).toLocaleString() + ' kWh × ' + bd.fitPrice.toFixed(2) + ' ฿';
+            } else {
+                document.getElementById('roi_presFitWrap').style.display = 'none';
+            }
+
+            // Money flow table
+            document.getElementById('roi_presBillBefore').textContent = Math.round(bd.currentBillMo).toLocaleString() + ' ฿';
+            document.getElementById('roi_presBillAfter').textContent = Math.round(bd.newBillMo).toLocaleString() + ' ฿';
+            document.getElementById('roi_presBillDelta').textContent = '−' + Math.round(bd.currentBillMo - bd.newBillMo).toLocaleString() + ' ฿';
+
+            var fitRow = document.getElementById('roi_presFitRow');
+            if (bd.includeFit && bd.fitIncomeMo > 0) {
+                fitRow.style.display = '';
+                document.getElementById('roi_presFitCol').textContent = '−' + Math.round(bd.fitIncomeMo).toLocaleString() + ' ฿';
+                document.getElementById('roi_presFitDeltaCol').textContent = '−' + Math.round(bd.fitIncomeMo).toLocaleString() + ' ฿';
+            } else {
+                fitRow.style.display = 'none';
+            }
+
+            document.getElementById('roi_presInstallmentCol').textContent = '+' + Math.round(bd.installmentMo).toLocaleString() + ' ฿';
+            document.getElementById('roi_presInstallmentDelta').textContent = '+' + Math.round(bd.installmentMo).toLocaleString() + ' ฿';
+
+            document.getElementById('roi_presOutlayBefore').textContent = Math.round(bd.outlayBefore).toLocaleString() + ' ฿';
+            document.getElementById('roi_presOutlayAfter').textContent = Math.round(bd.outlayAfter).toLocaleString() + ' ฿';
+            var outlayDeltaEl = document.getElementById('roi_presOutlayDelta');
+            var od = Math.round(bd.outlayDelta);
+            if (od < 0) {
+                outlayDeltaEl.textContent = '−' + Math.abs(od).toLocaleString() + ' ฿';
+                outlayDeltaEl.className = 'text-end text-success';
+            } else {
+                outlayDeltaEl.textContent = '+' + od.toLocaleString() + ' ฿';
+                outlayDeltaEl.className = 'text-end text-danger';
+            }
+
+            // ---------- Energy flow ----------
+            document.getElementById('roi_presSolarKwh').textContent = Math.round(bd.solarKwhMo).toLocaleString();
+            document.getElementById('roi_presSelfKwh').textContent = Math.round(bd.selfKwhMo).toLocaleString();
+            var selfPct = bd.solarKwhMo > 0 ? Math.round(bd.selfKwhMo / bd.solarKwhMo * 100) : 0;
+            document.getElementById('roi_presSelfPct').textContent = selfPct;
+            document.getElementById('roi_presBuyKwh').textContent = Math.round(bd.buyKwhMo).toLocaleString();
+            document.getElementById('roi_presBuyCost').textContent = Math.round(bd.buyCostMo).toLocaleString();
+
+            var sellBlock = document.getElementById('roi_presSellBlock');
+            if (bd.sellKwhMo > 0.5) {
+                sellBlock.style.display = '';
+                document.getElementById('roi_presSellKwh').textContent = Math.round(bd.sellKwhMo).toLocaleString();
+                document.getElementById('roi_presSellDetail').textContent = bd.includeFit ? ('ขายคืน ' + bd.fitPrice.toFixed(2) + ' ฿/หน่วย') : 'ยังไม่เปิด FIT';
+            } else {
+                sellBlock.style.display = 'none';
+            }
+
+            var battRow = document.getElementById('roi_presBattRow');
+            if (bd.hasBattery && bd.chargeKwhMo > 0) {
+                battRow.style.display = '';
+                document.getElementById('roi_presChargeKwh').textContent = Math.round(bd.chargeKwhMo).toLocaleString();
+                document.getElementById('roi_presBattOutKwh').textContent = Math.round(bd.battOutKwhMo).toLocaleString();
+                var lossPct = bd.chargeKwhMo > 0 ? Math.round((1 - bd.battOutKwhMo / bd.chargeKwhMo) * 100) : 0;
+                document.getElementById('roi_presBattLoss').textContent = lossPct;
+            } else {
+                battRow.style.display = 'none';
+            }
+
+            // Hint when calc result looks "wrong" so user understands why
+            var hint = '';
+            if ((Number(product.kw) || product.kWp || 0) <= 0 && bd.hasBattery) {
+                hint = 'ผลิตภัณฑ์นี้เป็นชุดเสริมแบตเตอรี่ (kWp=0) จึงไม่มีพลังงานเข้าแบต ทำให้ประหยัดเป็น 0 — ใช้ร่วมกับชุดโซลาร์ที่ติดตั้งไว้แล้ว';
+            } else if (bd.totalSavingMo === 0 && bd.solarKwhMo > 0) {
+                hint = 'การใช้ไฟกลางวันต่ำกว่าที่โซลาร์ผลิตได้ ลองปรับสัดส่วนกลางวัน/กลางคืน หรือเปิดสวิตช์ขายไฟคืน (FIT)';
+            }
+            if (hint) {
+                document.getElementById('roi_presHintWrap').style.display = '';
+                document.getElementById('roi_presHint').textContent = hint;
+            } else {
+                document.getElementById('roi_presHintWrap').style.display = 'none';
+            }
 
             // KPI cards
             var kpi = prodResult.kpi || {};
