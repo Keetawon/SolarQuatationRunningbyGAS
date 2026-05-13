@@ -26,14 +26,23 @@ var RoiCalc = (function () {
     var selfD, sellD, buyD, chargeD, battOut;
 
     if (kWhBatt > 0) {
-      // Case 2: with battery
+      // Case 2: with battery (Steady-State Daily Cycle)
       var excessD = Math.max(0, solarDaily - dayDaily);
-      chargeD = Math.min(excessD, kWhBatt * (inputs.batteryDod || 0.9));
-      sellD = Math.max(0, excessD - kWhBatt * (inputs.batteryDod || 0.9));
+      var battCapacityEffective = kWhBatt * (inputs.batteryDod || 0.9);
+      var maxUsefulCharge = nightDaily / (inputs.batteryRoundTrip || 0.92);
+      
+      // ชาร์จไฟเท่าที่มี excess, สูงสุดไม่เกินความจุแบตเตอรี่, และสูงสุดไม่เกินปริมาณไฟที่ต้องใช้กลางคืน
+      chargeD = Math.min(excessD, battCapacityEffective, maxUsefulCharge);
+      
       battOut = chargeD * (inputs.batteryRoundTrip || 0.92);
-      var buyND = Math.max(0, nightDaily - battOut);
+      
+      // ไฟผลิตเกินส่วนที่เหลือจากการชาร์จ จะถูกนำไปขาย
+      sellD = Math.max(0, excessD - chargeD);
+      
+      var buyND = Math.max(0, nightDaily - battOut); // battOut <= nightDaily อยู่แล้ว
       var buyDD = Math.max(0, dayDaily - solarDaily);
       buyD = buyND + buyDD;
+      
       selfD = Math.min(solarDaily, dayDaily) + battOut;
     } else {
       // Case 1: no battery

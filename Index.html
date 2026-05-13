@@ -392,19 +392,16 @@
                             <div class="step-dot">2</div><span>ค่าไฟ</span>
                         </div>
                         <div class="roi-progress-step" data-step="3" onclick="roiShowStep(3)">
-                            <div class="step-dot">3</div><span>กลางวัน/กลางคืน</span>
+                            <div class="step-dot">3</div><span>พฤติกรรม</span>
                         </div>
                         <div class="roi-progress-step" data-step="4" onclick="roiShowStep(4)">
-                            <div class="step-dot">4</div><span>ตัวเลือก</span>
+                            <div class="step-dot">4</div><span>ระบบโซลาร์</span>
                         </div>
                         <div class="roi-progress-step" data-step="5" onclick="roiShowStep(5)">
-                            <div class="step-dot">5</div><span>เปรียบเทียบ</span>
+                            <div class="step-dot">5</div><span>สินเชื่อ</span>
                         </div>
                         <div class="roi-progress-step" data-step="6" onclick="roiShowStep(6)">
-                            <div class="step-dot">6</div><span>ไฟเนาซ์</span>
-                        </div>
-                        <div class="roi-progress-step" data-step="7" onclick="roiShowStep(7)">
-                            <div class="step-dot">7</div><span>สรุป</span>
+                            <div class="step-dot">6</div><span>สรุป/นำเสนอ</span>
                         </div>
                     </div>
 
@@ -545,6 +542,11 @@
                             <!-- Sub-panel: Know % -->
                             <div class="col-12 d-none" id="roi_splitPercent">
                                 <label class="form-label fw-bold">สัดส่วนกลางวัน (%)</label>
+                                <div class="d-flex gap-2 mb-3 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="roiSetPresetDay(0.6)">🏠 บ้านครอบครัว (กลางวัน 60%)</button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="roiSetPresetDay(0.3)">🏢 พนักงานออฟฟิศ (กลางวัน 30%)</button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="roiSetPresetDay(0.8)">💼 โฮมออฟฟิศ (กลางวัน 80%)</button>
+                                </div>
                                 <input type="range" id="roi_dayFractionSlider" class="form-range" min="0.1" max="0.9" step="0.05" value="0.4" oninput="roiOnDayFractionSlider()">
                                 <div class="d-flex justify-content-between">
                                     <small>10%</small>
@@ -600,36 +602,83 @@
                         </div>
                     </div>
 
-                    <!-- ===== STEP 4: Options ===== -->
+                    <!-- ===== STEP 4: System Configuration ===== -->
                     <div class="roi-step" id="roi-step-4">
-                        <h5 class="card-title-custom">ตัวเลือกเพิ่มเติม</h5>
+                        <h5 class="card-title-custom">ข้อมูลระบบโซลาร์เซลล์</h5>
+                        
+                        <!-- Smart Recommendation Box -->
+                        <div id="roi_smartRecommendation" class="alert mb-4" style="background-color: #E3F2FD; border-left: 4px solid #1E88E5; border-radius: 12px; display: none;">
+                            <div class="d-flex align-items-start">
+                                <div class="fs-3 me-3">💡</div>
+                                <div>
+                                    <strong class="text-primary mb-1 d-block" style="font-size: 1.1rem;">ระบบแนะนำอัจฉริยะ</strong>
+                                    <div class="mb-2" id="roi_smartRecText">กำลังวิเคราะห์...</div>
+                                    <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" onclick="roiApplySmartRecommendation()">✨ นำไปกรอกอัตโนมัติ</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="FIT (Feed-in Tariff) = ขายไฟส่วนเกินคืนให้การไฟฟ้าตามราคาที่ประกาศ — เปิดถ้าลูกค้าสมัครโครงการ Solar Rooftop ของ กฟผ./กฟภ. แล้ว ระบบจะคำนวณรายรับเพิ่มจากการขายไฟ (ค่า FIT ใน roi_assumption sheet)">
-                                    <input class="form-check-input" type="checkbox" id="roi_includeFit" onchange="roiScheduleAutoSave()">
-                                    <label class="form-check-label fw-bold" for="roi_includeFit">รวม FIT (ซื้อไฟคืน)</label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="เปิดถ้าลูกค้ามีแผงโซลาร์ติดอยู่แล้วและต้องการเพิ่ม/เปลี่ยน — ระบบจะคำนวณ ROI เป็นส่วนต่าง ไม่นับยอดที่ติดอยู่เดิม ปิดถ้าเป็นการติดครั้งแรก">
-                                    <input class="form-check-input" type="checkbox" id="roi_existingSolar" onchange="roiScheduleAutoSave()">
-                                    <label class="form-check-label fw-bold" for="roi_existingSolar">มีแผงโซลาร์เซลล์อยู่แล้ว</label>
-                                </div>
-                            </div>
                             <div class="col-12">
-                                <label class="form-label fw-bold">
-                                    สัดส่วนหลังคาที่รับแสงได้
-                                    <span class="badge bg-info text-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="บางบ้านมีต้นไม้บัง หรือหลังคาไม่ได้รับแสงเต็มที่ เช่น ระเบียงบัง อาคารข้างเคียงบัง ให้ปรับเปอร์เซ็นต์ให้ตรงกับสภาพจริง">?</span>
-                                </label>
-                                <input type="range" id="roi_roofRatio" class="form-range" min="0.5" max="1" step="0.05" value="1" oninput="document.getElementById('roi_roofRatioValue').textContent = Math.round(this.value * 100) + '%'; roiScheduleAutoSave()">
-                                <div class="d-flex justify-content-between">
-                                    <small>50%</small>
-                                    <strong id="roi_roofRatioValue">100%</strong>
-                                    <small>100%</small>
+                                <label class="form-label fw-bold">รูปแบบการติดตั้ง</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check roi-radio-card p-3 border rounded shadow-sm flex-fill" style="cursor: pointer;" onclick="document.getElementById('roi_installNew').checked=true; roiScheduleAutoSave();">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="roi_installType" id="roi_installNew" value="new" checked onchange="roiScheduleAutoSave()">
+                                        <label class="form-check-label fw-bold mb-0" for="roi_installNew">☀️ ติดตั้งใหม่</label>
+                                    </div>
+                                    <div class="form-check roi-radio-card p-3 border rounded shadow-sm flex-fill" style="cursor: pointer;" onclick="document.getElementById('roi_installScale').checked=true; roiScheduleAutoSave();">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="roi_installType" id="roi_installScale" value="scale" onchange="roiScheduleAutoSave()">
+                                        <label class="form-check-label fw-bold mb-0" for="roi_installScale">➕ เพิ่มขนาดจากของเดิม</label>
+                                    </div>
                                 </div>
                             </div>
+
+                            <div class="col-md-6 mt-4">
+                                <label class="form-label fw-bold">ขนาดแผงโซลาร์ (kWp)</label>
+                                <div class="input-group input-group-lg">
+                                    <button class="btn btn-outline-secondary px-3" type="button" onclick="roiAdjustInput('roi_customKw', -1)">-</button>
+                                    <input type="number" id="roi_customKw" class="form-control text-center fw-bold fs-5" placeholder="0" min="0" step="1" oninput="roiSuggestPrice()">
+                                    <button class="btn btn-outline-secondary px-3" type="button" onclick="roiAdjustInput('roi_customKw', 1)">+</button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-4">
+                                <label class="form-label fw-bold">ขนาดแบตเตอรี่ (kWh)</label>
+                                <div class="input-group input-group-lg">
+                                    <button class="btn btn-outline-secondary px-3" type="button" onclick="roiAdjustInput('roi_customBattery', -5)">-</button>
+                                    <input type="number" id="roi_customBattery" class="form-control text-center fw-bold fs-5" value="0" min="0" step="5" oninput="roiSuggestPrice()">
+                                    <button class="btn btn-outline-secondary px-3" type="button" onclick="roiAdjustInput('roi_customBattery', 5)">+</button>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <label class="form-label fw-bold">ราคาประเมิน (บาท)</label>
+                                <input type="number" id="roi_customPrice" class="form-control form-control-lg fw-bold text-success fs-5" placeholder="กรอกราคาประเมิน" min="0" step="1000">
+                                <div id="roi_priceSuggestionWrap" class="mt-2 text-muted small" style="display:none;">
+                                    💰 <span id="roi_priceSuggestionText">ราคาอ้างอิงในตลาด: - บาท</span> 
+                                    <a href="javascript:void(0)" class="text-decoration-none ms-2 badge bg-secondary text-light" onclick="roiApplySuggestedPrice()">ใช้ราคานี้</a>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <div class="form-check form-switch p-3 border rounded shadow-sm h-100" data-bs-toggle="tooltip" data-bs-placement="top" title="ขายไฟส่วนเกินคืนให้การไฟฟ้า">
+                                    <input class="form-check-input" type="checkbox" id="roi_includeFit" onchange="roiScheduleAutoSave()" style="margin-left: -2em; margin-right: 0.5em;">
+                                    <label class="form-check-label fw-bold" for="roi_includeFit">รวม FIT (เข้าร่วมโครงการขายไฟคืน)</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mt-3">
+                                <div class="border rounded shadow-sm p-3 h-100">
+                                    <label class="form-label fw-bold mb-1">สัดส่วนหลังคาที่รับแสงได้</label>
+                                    <input type="range" id="roi_roofRatio" class="form-range" min="0.5" max="1" step="0.05" value="1" oninput="document.getElementById('roi_roofRatioValue').textContent = Math.round(this.value * 100) + '%'; roiScheduleAutoSave()">
+                                    <div class="d-flex justify-content-between">
+                                        <small>50%</small>
+                                        <strong id="roi_roofRatioValue" class="text-primary">100%</strong>
+                                        <small>100%</small>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="col-12 mt-3">
                                 <a class="text-decoration-none" data-bs-toggle="collapse" href="#roi_advancedPanel" role="button" aria-expanded="false" aria-controls="roi_advancedPanel">
                                     <strong style="color: var(--ocean-dark);">&#9881; ตั้งค่าขั้นสูง (Assumptions)</strong>
@@ -660,46 +709,12 @@
                         </div>
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-outline-ocean" onclick="roiShowStep(3)">&larr; ย้อนกลับ</button>
-                            <button class="btn btn-ocean" onclick="roiCalcComparison(); roiShowStep(5);">เปรียบเทียบระบบ &rarr;</button>
+                            <button class="btn btn-ocean" id="roi_btnToFinance" onclick="roiProcessCustomSystem(); roiShowStep(5)">ถัดไป &rarr; สินเชื่อ</button>
                         </div>
                     </div>
 
-                    <!-- ===== STEP 5: System Comparison ===== -->
+                    <!-- ===== STEP 5: Financing Guide ===== -->
                     <div class="roi-step" id="roi-step-5">
-                        <h5 class="card-title-custom">เปรียบเทียบระบบโซลาร์เซลล์</h5>
-                        <div id="roi_compareLoading" class="text-center text-muted py-4 d-none">
-                            <div class="spinner-border spinner-border-sm me-2"></div> กำลังคำนวณ...
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered roi-compare-table" id="roi_compareTable">
-                                <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>รุ่น</th>
-                                        <th>kWp</th>
-                                        <th>แบตเตอรี่</th>
-                                        <th>ราคา (บาท)</th>
-                                        <th>ผลิต/ปี (kWh)</th>
-                                        <th>ใช้เอง/ปี</th>
-                                        <th>ขาย/ปี</th>
-                                        <th>ค่าไฟสุทธิ/ปี</th>
-                                        <th>ประหยัด/ปี</th>
-                                        <th>คืนทุน (ปี)</th>
-                                        <th>NPV 25ปี</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="roi_compareBody"></tbody>
-                            </table>
-                        </div>
-                        <button class="btn btn-sm btn-outline-ocean mt-2" onclick="roiAddCustomSystem()">+ เพิ่มระบบกำหนดเอง</button>
-                        <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-ocean" onclick="roiShowStep(4)">&larr; ย้อนกลับ</button>
-                            <button class="btn btn-ocean" id="roi_btnToFinance" onclick="roiShowStep(6)" disabled>เลือกระบบแล้ว &rarr; ไฟเนาซ์</button>
-                        </div>
-                    </div>
-
-                    <!-- ===== STEP 6: Financing Guide ===== -->
-                    <div class="roi-step" id="roi-step-6">
                         <h5 class="card-title-custom">แนะนำแผนไฟเนาซ์</h5>
                         <div class="row g-3 mb-3">
                             <div class="col-md-3">
@@ -761,16 +776,22 @@
                             ไม่พบแผนไฟเนาซ์ที่เหมาะสม ลองปรับเงื่อนไข
                         </div>
                         <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-ocean" onclick="roiShowStep(5)">&larr; ย้อนกลับ</button>
-                            <button class="btn btn-ocean" id="roi_btnToPresent" onclick="roiShowStep(7)" disabled>เลือกแผนแล้ว &rarr; สรุป</button>
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(4)">&larr; ย้อนกลับ</button>
+                            <button class="btn btn-ocean" id="roi_btnToPresent" onclick="roiShowStep(6)" disabled>เลือกแผนแล้ว &rarr; สรุป</button>
                         </div>
                     </div>
 
-                    <!-- ===== STEP 7: Presentation Mode ===== -->
-                    <div class="roi-step" id="roi-step-7">
+                    <!-- ===== STEP 6: Presentation Mode ===== -->
+                    <div class="roi-step" id="roi-step-6">
                         <h5 class="card-title-custom">สรุปผลการวิเคราะห์ ROI</h5>
                         <div id="roi_presentContent" class="text-center">
                             <p class="text-muted mb-4" id="roi_presCustomerLabel">-</p>
+
+                            <!-- NEW: Sales Script -->
+                            <div class="card p-3 mb-4 text-start bg-light border-0 shadow-sm" style="border-radius: 15px; border-left: 4px solid var(--ocean-main) !important;">
+                                <h6 class="fw-bold mb-2" style="color: var(--ocean-dark);">💬 สคริปต์เสนอขาย (สำหรับเซลล์)</h6>
+                                <p class="mb-0 text-dark" id="roi_presSalesScript">กำลังประมวลผลข้อมูล...</p>
+                            </div>
 
                             <!-- Hero: Net Monthly -->
                             <div class="card border-0 shadow-lg mb-4 p-4" style="border-radius: 20px; background: linear-gradient(135deg, #E0F2F1, #B2DFDB);">
@@ -969,8 +990,11 @@
                             </div>
                         </div>
                         <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-outline-ocean" onclick="roiShowStep(6)">&larr; ย้อนกลับ</button>
-                            <button class="btn btn-ocean" onclick="roiAutoSave(); alert('บันทึก session แล้ว');">บันทึก Session</button>
+                            <button class="btn btn-outline-ocean" onclick="roiShowStep(5)">&larr; ย้อนกลับ</button>
+                            <div>
+                                <button class="btn btn-outline-secondary me-2" onclick="roiAutoSave(); alert('บันทึก session แล้ว');">💾 บันทึก Session</button>
+                                <button class="btn btn-success px-4 fw-bold shadow-sm" onclick="roiSendToQuotation()">📝 สร้างใบเสนอราคา</button>
+                            </div>
                         </div>
                     </div>
 
@@ -1246,154 +1270,230 @@
               <div class="modal-dialog modal-lg modal-fullscreen-md-down">
                 <div class="modal-content">
                   <div class="modal-header" style="background:var(--ocean-bg)">
-                    <h6 class="modal-title" id="adminPlanModalLabel">เพิ่ม Financing Plan</h6>
+                    <h6 class="modal-title fw-bold" id="adminPlanModalLabel" style="color:var(--ocean-dark);">เพิ่ม/แก้ไข แผนสินเชื่อ (Financing Plan)</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body">
-                    <div class="row g-2">
-                      <div class="col-12 col-md-4">
-                        <label class="form-label small">Plan ID</label>
-                        <input type="text" id="ap_plan_id" class="form-control form-control-sm">
+                  <div class="modal-body p-4 bg-light">
+                  
+                    <!-- Section 1: ข้อมูลพื้นฐาน -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        1. ข้อมูลพื้นฐาน (Basic Info)
                       </div>
-                      <div class="col-6 col-md-4">
-                        <label class="form-label small">Bank Code</label>
-                        <input type="text" id="ap_bank_code" class="form-control form-control-sm" placeholder="เช่น ICBC, BBL">
-                      </div>
-                      <div class="col-6 col-md-4">
-                        <label class="form-label small">ชื่อธนาคาร (TH)</label>
-                        <input type="text" id="ap_bank_label_th" class="form-control form-control-sm">
-                      </div>
-                      <div class="col-12 col-md-8">
-                        <label class="form-label small">ชื่อผลิตภัณฑ์ (TH)</label>
-                        <input type="text" id="ap_product_name_th" class="form-control form-control-sm">
-                      </div>
-                      <div class="col-12 col-md-4">
-                        <label class="form-label small">Campaign Code</label>
-                        <input type="text" id="ap_campaign_code" class="form-control form-control-sm">
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Financing Type</label>
-                        <select id="ap_financing_type" class="form-select form-select-sm">
-                          <option value="">-- เลือก --</option>
-                          <option value="cash">Cash</option>
-                          <option value="personal_loan">Personal Loan</option>
-                          <option value="home_equity">Home Equity</option>
-                          <option value="credit_card_installment">Credit Card Installment</option>
-                        </select>
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Rate Type</label>
-                        <select id="ap_rate_type" class="form-select form-select-sm">
-                          <option value="">-- เลือก --</option>
-                          <option value="flat">Flat</option>
-                          <option value="reducing">Reducing</option>
-                        </select>
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Rate Basis</label>
-                        <select id="ap_rate_basis" class="form-select form-select-sm">
-                          <option value="">-- เลือก --</option>
-                          <option value="fixed">Fixed</option>
-                          <option value="reference">Reference</option>
-                        </select>
-                      </div>
-                      <div class="col-12 col-md-4">
-                        <label class="form-label small">Rate Reference</label>
-                        <input type="text" id="ap_rate_reference" class="form-control form-control-sm" placeholder="เช่น MRR-1.00, MLR+0.55">
-                      </div>
-                      <div class="col-4 col-md-2">
-                        <label class="form-label small">Term Min</label>
-                        <input type="number" id="ap_term_min_months" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-4 col-md-2">
-                        <label class="form-label small">Term Max</label>
-                        <input type="number" id="ap_term_max_months" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-4 col-md-2">
-                        <label class="form-label small">Term Step</label>
-                        <input type="number" id="ap_term_step_months" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small">Price Min</label>
-                        <input type="number" id="ap_price_min" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small">Price Max</label>
-                        <input type="number" id="ap_price_max" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-12 col-md-6">
-                        <label class="form-label small">Down % Options (คั่นด้วย ,)</label>
-                        <input type="text" id="ap_down_percent_options" class="form-control form-control-sm" placeholder="เช่น 0.10,0.15,0.20">
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small">Processing Fee</label>
-                        <input type="number" id="ap_processing_fee" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small">Monthly Fee</label>
-                        <input type="number" id="ap_monthly_fee" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small d-block">Tax Deduct</label>
-                        <div class="form-check form-check-inline mt-1">
-                          <input type="checkbox" id="ap_tax_deduction_eligible" class="form-check-input">
-                          <label class="form-check-label small" for="ap_tax_deduction_eligible">ลดหย่อนได้</label>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">รหัสแผน (Plan ID) <span class="text-danger">*</span></label>
+                            <input type="text" id="ap_plan_id" class="form-control form-control-sm bg-light" placeholder="ระบบจะสร้างให้อัตโนมัติ" readonly>
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">รหัสอ้างอิง (สร้างให้อัตโนมัติ)</small>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">รหัสธนาคาร (Bank Code)</label>
+                            <input type="text" id="ap_bank_code" class="form-control form-control-sm" placeholder="เช่น KBANK, SCB">
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">รหัสแคมเปญ (Campaign Code)</label>
+                            <input type="text" id="ap_campaign_code" class="form-control form-control-sm" placeholder="รหัสโปรโมชั่นจากธนาคาร">
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ชื่อธนาคาร (ภาษาไทย) <span class="text-danger">*</span></label>
+                            <input type="text" id="ap_bank_label_th" class="form-control form-control-sm" placeholder="เช่น กสิกรไทย">
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ชื่อผลิตภัณฑ์สินเชื่อ (ภาษาไทย) <span class="text-danger">*</span></label>
+                            <input type="text" id="ap_product_name_th" class="form-control form-control-sm" placeholder="เช่น สินเชื่อ Green Zero">
+                          </div>
                         </div>
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small d-block">Collateral</label>
-                        <div class="form-check form-check-inline mt-1">
-                          <input type="checkbox" id="ap_requires_collateral" class="form-check-input">
-                          <label class="form-check-label small" for="ap_requires_collateral">ต้องใช้หลักทรัพย์</label>
-                        </div>
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small d-block">Fire Insurance</label>
-                        <div class="form-check form-check-inline mt-1">
-                          <input type="checkbox" id="ap_requires_fire_insurance" class="form-check-input">
-                          <label class="form-check-label small" for="ap_requires_fire_insurance">ประกันอัคคีภัย</label>
-                        </div>
-                      </div>
-                      <div class="col-6 col-md-3">
-                        <label class="form-label small d-block">Credit Card</label>
-                        <div class="form-check form-check-inline mt-1">
-                          <input type="checkbox" id="ap_requires_credit_card_of_bank" class="form-check-input">
-                          <label class="form-check-label small" for="ap_requires_credit_card_of_bank">ต้องมีบัตร</label>
-                        </div>
-                      </div>
-                      <div class="col-12">
-                        <label class="form-label small">Recommend Tags</label>
-                        <input type="text" id="ap_recommend_tags" class="form-control form-control-sm" placeholder="คั่นด้วย ,">
-                      </div>
-                      <div class="col-12">
-                        <label class="form-label small">คำแนะนำ (TH)</label>
-                        <input type="text" id="ap_guide_question_hint_th" class="form-control form-control-sm">
-                      </div>
-                      <div class="col-12">
-                        <label class="form-label small">หมายเหตุ (TH)</label>
-                        <textarea id="ap_note_th" class="form-control form-control-sm" rows="2"></textarea>
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Status</label>
-                        <select id="ap_status" class="form-select form-select-sm">
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                          <option value="draft">Draft</option>
-                        </select>
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Effective From</label>
-                        <input type="date" id="ap_effective_from" class="form-control form-control-sm">
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Effective To</label>
-                        <input type="date" id="ap_effective_to" class="form-control form-control-sm">
                       </div>
                     </div>
+
+                    <!-- Section 2: เงื่อนไขสินเชื่อและดอกเบี้ย -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        2. รูปแบบและอัตราดอกเบี้ย (Financing & Interest Rate)
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">ประเภทสินเชื่อ (Type)</label>
+                            <select id="ap_financing_type" class="form-select form-select-sm">
+                              <option value="">-- เลือกประเภท --</option>
+                              <option value="cash">เงินสด (Cash)</option>
+                              <option value="personal_loan">สินเชื่อบุคคล (Personal Loan)</option>
+                              <option value="home_equity">บ้านแลกเงิน (Home Equity)</option>
+                              <option value="credit_card_installment">ผ่อนผ่านบัตรเครดิต</option>
+                            </select>
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">เลือกประเภทแหล่งเงินทุน</small>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">การคิดดอกเบี้ย (Rate Type)</label>
+                            <select id="ap_rate_type" class="form-select form-select-sm">
+                              <option value="">-- เลือก --</option>
+                              <option value="flat">Flat Rate (ดอกเบี้ยคงที่)</option>
+                              <option value="reducing">Reducing (ลดต้นลดดอก)</option>
+                            </select>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">รูปแบบอัตราดอกเบี้ย (Basis)</label>
+                            <select id="ap_rate_basis" class="form-select form-select-sm">
+                              <option value="">-- เลือก --</option>
+                              <option value="fixed">Fixed (ดอกเบี้ยตายตัว)</option>
+                              <option value="reference">Reference (อ้างอิงดอกเบี้ยตลาด)</option>
+                            </select>
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">คงที่ หรือ ลอยตัว</small>
+                          </div>
+                          <div class="col-md-12">
+                            <label class="form-label small fw-bold">ดอกเบี้ยอ้างอิง (Rate Reference)</label>
+                            <input type="text" id="ap_rate_reference" class="form-control form-control-sm" placeholder="เช่น MRR-1.00 หรือ MLR+0.55">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">กรอกกรณีดอกเบี้ยลอยตัว (หากเป็นดอกเบี้ยคงที่ให้เว้นว่างและไปกำหนดอัตราที่เมนูเพิ่ม Rate Tier)</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section 3: ระยะเวลาและสัดส่วนเงินดาวน์ -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        3. เงื่อนไขระยะเวลาการผ่อน และราคาระบบ (Terms & Pricing)
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">จำนวนงวดผ่อน เริ่มต้น</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_term_min_months" class="form-control" placeholder="เช่น 12" min="0">
+                              <span class="input-group-text">เดือน</span>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">จำนวนงวดผ่อน สูงสุด</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_term_max_months" class="form-control" placeholder="เช่น 60" min="0">
+                              <span class="input-group-text">เดือน</span>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">สเตปการเพิ่มงวด (Term Step)</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_term_step_months" class="form-control" placeholder="เช่น 12" min="0">
+                              <span class="input-group-text">เดือน</span>
+                            </div>
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">เช่น 12 หมายถึง (12, 24, 36...)</small>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ราคาระบบ ขั้นต่ำที่ร่วมรายการ</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_price_min" class="form-control" placeholder="ไม่มีขั้นต่ำให้เว้นว่าง" min="0">
+                              <span class="input-group-text">บาท</span>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ราคาระบบ สูงสุดที่ร่วมรายการ</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_price_max" class="form-control" placeholder="ไม่มีสูงสุดให้เว้นว่าง" min="0">
+                              <span class="input-group-text">บาท</span>
+                            </div>
+                          </div>
+                          <div class="col-md-12">
+                            <label class="form-label small fw-bold">ตัวเลือกสัดส่วนเงินดาวน์ (Down % Options)</label>
+                            <input type="text" id="ap_down_percent_options" class="form-control form-control-sm" placeholder="เช่น 0, 0.10, 0.20">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุเป็นจุดทศนิยมและคั่นด้วยลูกน้ำ (ตัวอย่าง: 0 = ไม่ดาวน์, 0.10 = ดาวน์ 10%, 0.20 = ดาวน์ 20%)</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section 4: ค่าธรรมเนียม ข้อกำหนด และอื่นๆ -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        4. ค่าธรรมเนียม ข้อกำหนด และการแสดงผล (Fees, Requirements & Display)
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ค่าธรรมเนียมจัดการ (Processing Fee)</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_processing_fee" class="form-control" placeholder="0" min="0">
+                              <span class="input-group-text">บาท</span>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ค่าธรรมเนียมรายเดือน (Monthly Fee)</label>
+                            <div class="input-group input-group-sm">
+                              <input type="number" id="ap_monthly_fee" class="form-control" placeholder="0" min="0">
+                              <span class="input-group-text">บาท</span>
+                            </div>
+                          </div>
+                          
+                          <!-- Switches -->
+                          <div class="col-12 mt-4 mb-2">
+                            <label class="form-label small fw-bold border-bottom pb-2 w-100" style="color: var(--ocean-main);">ข้อกำหนดของสินเชื่อ (Requirements)</label>
+                            <div class="d-flex flex-wrap gap-4 pt-1">
+                              <div class="form-check form-switch">
+                                <input type="checkbox" id="ap_tax_deduction_eligible" class="form-check-input" style="cursor: pointer;">
+                                <label class="form-check-label small" for="ap_tax_deduction_eligible" style="cursor: pointer;">ลดหย่อนภาษีได้</label>
+                              </div>
+                              <div class="form-check form-switch">
+                                <input type="checkbox" id="ap_requires_collateral" class="form-check-input" style="cursor: pointer;">
+                                <label class="form-check-label small" for="ap_requires_collateral" style="cursor: pointer;">ใช้หลักทรัพย์ค้ำประกัน</label>
+                              </div>
+                              <div class="form-check form-switch">
+                                <input type="checkbox" id="ap_requires_fire_insurance" class="form-check-input" style="cursor: pointer;">
+                                <label class="form-check-label small" for="ap_requires_fire_insurance" style="cursor: pointer;">ต้องทำประกันอัคคีภัย</label>
+                              </div>
+                              <div class="form-check form-switch">
+                                <input type="checkbox" id="ap_requires_credit_card_of_bank" class="form-check-input" style="cursor: pointer;">
+                                <label class="form-check-label small" for="ap_requires_credit_card_of_bank" style="cursor: pointer;">ต้องมีบัตรเครดิตธนาคารนี้</label>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Text Labels -->
+                          <div class="col-12 mt-3">
+                            <label class="form-label small fw-bold">แท็กแนะนำ (Recommend Tags)</label>
+                            <input type="text" id="ap_recommend_tags" class="form-control form-control-sm" placeholder="เช่น อนุมัติไว, ดอกเบี้ยถูก (คั่นด้วย ,)">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ป้ายกำกับสำหรับแสดงให้เซลล์และลูกค้าเห็นเป็นจุดเด่น</small>
+                          </div>
+                          <div class="col-12">
+                            <label class="form-label small fw-bold">คำแนะนำสั้นๆ สำหรับเซลล์</label>
+                            <input type="text" id="ap_guide_question_hint_th" class="form-control form-control-sm" placeholder="เช่น เหมาะสำหรับบ้านที่ปลอดภาระ">
+                          </div>
+                          <div class="col-12">
+                            <label class="form-label small fw-bold">หมายเหตุเงื่อนไขเพิ่มเติม (แสดงให้ลูกค้าเห็น)</label>
+                            <textarea id="ap_note_th" class="form-control form-control-sm" rows="2" placeholder="เช่น เงื่อนไขเป็นไปตามที่ธนาคารกำหนด"></textarea>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section 5: การตั้งค่าระบบ -->
+                    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">สถานะของแผน (Status)</label>
+                            <select id="ap_status" class="form-select form-select-sm">
+                              <option value="active">เปิดใช้งาน (Active)</option>
+                              <option value="inactive">ระงับชั่วคราว (Inactive)</option>
+                              <option value="draft">แบบร่าง (Draft)</option>
+                            </select>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">เริ่มใช้งานตั้งแต่ (Effective From)</label>
+                            <input type="date" id="ap_effective_from" class="form-control form-control-sm">
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">สิ้นสุดโปรโมชั่น (Effective To)</label>
+                            <input type="date" id="ap_effective_to" class="form-control form-control-sm">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" class="btn btn-ocean btn-sm" onclick="adminSavePlan()">บันทึก</button>
+                  <div class="modal-footer bg-white" style="border-top: 1px solid #eee;">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-ocean px-5 fw-bold shadow-sm" onclick="adminSavePlan()">💾 บันทึกแผนสินเชื่อ</button>
                   </div>
                 </div>
               </div>
@@ -1401,67 +1501,111 @@
 
             <!-- Admin Tier Modal -->
             <div class="modal fade" id="adminTierModal" tabindex="-1">
-              <div class="modal-dialog modal-fullscreen-md-down">
+              <div class="modal-dialog modal-lg modal-fullscreen-md-down">
                 <div class="modal-content">
                   <div class="modal-header" style="background:var(--ocean-bg)">
-                    <h6 class="modal-title" id="adminTierModalLabel">เพิ่ม Rate Tier</h6>
+                    <h6 class="modal-title fw-bold" id="adminTierModalLabel" style="color:var(--ocean-dark);">เพิ่ม/แก้ไข Rate Tier</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body">
-                    <div class="row g-2">
-                      <div class="col-12 col-md-6">
-                        <label class="form-label small">Tier ID</label>
-                        <input type="text" id="at_tier_id" class="form-control form-control-sm">
+                  <div class="modal-body p-4 bg-light">
+                    
+                    <!-- ข้อมูลพื้นฐาน Tier -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        1. ข้อมูลพื้นฐาน (Tier Info)
                       </div>
-                      <div class="col-12 col-md-6">
-                        <label class="form-label small">Plan ID</label>
-                        <input type="text" id="at_plan_id" class="form-control form-control-sm" readonly>
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label small">Term Months (* = all)</label>
-                        <input type="text" id="at_applies_to_term_months" class="form-control form-control-sm" placeholder="48 หรือ *">
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label small">Down % (* = all)</label>
-                        <input type="text" id="at_applies_to_down_percent" class="form-control form-control-sm" placeholder="0.10 หรือ *">
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label small">From Month</label>
-                        <input type="number" id="at_from_month" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label small">To Month</label>
-                        <input type="number" id="at_to_month" class="form-control form-control-sm" min="0">
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Rate Override</label>
-                        <select id="at_rate_type_override" class="form-select form-select-sm">
-                          <option value="">(ใช้ค่า plan)</option>
-                          <option value="flat">Flat</option>
-                          <option value="reducing">Reducing</option>
-                        </select>
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Rate Value</label>
-                        <input type="number" id="at_rate_value" class="form-control form-control-sm" step="0.0001" placeholder="0.0739">
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Ref Offset</label>
-                        <input type="number" id="at_reference_offset" class="form-control form-control-sm" step="0.01" placeholder="-0.01">
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label small">Sequence</label>
-                        <input type="number" id="at_sequence" class="form-control form-control-sm" min="1" value="1">
-                      </div>
-                      <div class="col-12">
-                        <label class="form-label small">หมายเหตุ (TH)</label>
-                        <input type="text" id="at_note_th" class="form-control form-control-sm">
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">รหัส Tier (Tier ID)</label>
+                            <input type="text" id="at_tier_id" class="form-control form-control-sm bg-light" placeholder="ระบบจะสร้างให้อัตโนมัติ" readonly>
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">รหัสอ้างอิง (สร้างให้อัตโนมัติ)</small>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">รหัสแผนหลัก (Plan ID)</label>
+                            <input type="text" id="at_plan_id" class="form-control form-control-sm bg-light" readonly>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ลำดับการแสดงผล (Sequence)</label>
+                            <input type="number" id="at_sequence" class="form-control form-control-sm" min="1" value="1">
+                          </div>
+                        </div>
                       </div>
                     </div>
+
+                    <!-- เงื่อนไขการใช้งาน Tier -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        2. เงื่อนไขการบังคับใช้ (Applies To)
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ใช้กับงวดผ่อน (Term Months)</label>
+                            <input type="text" id="at_applies_to_term_months" class="form-control form-control-sm" placeholder="เช่น 48 หรือ * (ทั้งหมด)">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุจำนวนเดือน หรือใส่ * หากใช้ได้กับทุกงวด</small>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">ใช้กับเงินดาวน์ (Down %)</label>
+                            <input type="text" id="at_applies_to_down_percent" class="form-control form-control-sm" placeholder="เช่น 0.10 หรือ * (ทั้งหมด)">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุสัดส่วนทศนิยม หรือใส่ * หากใช้ได้กับทุกสัดส่วนดาวน์</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- การคิดอัตราดอกเบี้ย -->
+                    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                      <div class="card-header bg-white fw-bold py-3" style="color: var(--ocean-dark); border-bottom: 2px solid var(--ocean-bg);">
+                        3. อัตราดอกเบี้ยของ Tier นี้ (Interest Rate Override)
+                      </div>
+                      <div class="card-body">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">เริ่มตั้งแต่เดือนที่ (From Month)</label>
+                            <input type="number" id="at_from_month" class="form-control form-control-sm" min="0" placeholder="เช่น 1">
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label small fw-bold">สิ้นสุดที่เดือนที่ (To Month)</label>
+                            <input type="number" id="at_to_month" class="form-control form-control-sm" min="0" placeholder="เช่น 12">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">เว้นว่างหากมีผลตลอดไป</small>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">ปรับรูปแบบดอกเบี้ย</label>
+                            <select id="at_rate_type_override" class="form-select form-select-sm">
+                              <option value="">(ใช้ค่าเดิมตาม Plan)</option>
+                              <option value="flat">บังคับเป็น Flat Rate</option>
+                              <option value="reducing">บังคับเป็น Reducing</option>
+                            </select>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">อัตราดอกเบี้ย (Rate Value)</label>
+                            <input type="number" id="at_rate_value" class="form-control form-control-sm" step="0.0001" placeholder="เช่น 0.0739">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ตัวอย่าง: ดอกเบี้ย 7.39% ให้กรอก 0.0739</small>
+                          </div>
+                          <div class="col-md-4">
+                            <label class="form-label small fw-bold">ส่วนต่างดอกเบี้ยอ้างอิง</label>
+                            <input type="number" id="at_reference_offset" class="form-control form-control-sm" step="0.01" placeholder="เช่น -0.01">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ใช้กับ Rate Reference</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ข้อมูลอื่นๆ -->
+                    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                      <div class="card-body">
+                        <div class="col-12">
+                          <label class="form-label small fw-bold">หมายเหตุ (TH)</label>
+                          <input type="text" id="at_note_th" class="form-control form-control-sm" placeholder="คำอธิบายเพิ่มเติมสำหรับ Tier นี้">
+                        </div>
+                      </div>
+                    </div>
+                    
                   </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" class="btn btn-ocean btn-sm" onclick="adminSaveTier()">บันทึก</button>
+                  <div class="modal-footer bg-white" style="border-top: 1px solid #eee;">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-ocean px-5 fw-bold shadow-sm" onclick="adminSaveTier()">💾 บันทึก Rate Tier</button>
                   </div>
                 </div>
               </div>
@@ -2344,8 +2488,18 @@
                 roiPopulateAppliances();
             }
 
-            // Render presentation when entering step 7
-            if (n === 7) {
+            // Compute Smart Recommendation when entering step 4
+            if (n === 4) {
+                roiComputeSmartRecommendation();
+            }
+
+            // Calculate financing when entering step 5
+            if (n === 5) {
+                roiCalcFinancing();
+            }
+
+            // Render presentation when entering step 6
+            if (n === 6) {
                 roiRenderPresentation();
             }
         }
@@ -2571,6 +2725,14 @@
             roiScheduleAutoSave();
         }
 
+        function roiSetPresetDay(val) {
+            var slider = document.getElementById('roi_dayFractionSlider');
+            if (slider) {
+                slider.value = val;
+                roiOnDayFractionSlider();
+            }
+        }
+
         function roiPopulateAppliances() {
             // nothing to pre-populate — user searches and adds via dropdown
             roiFilterAppliances();
@@ -2699,19 +2861,41 @@
             roiScheduleAutoSave();
         }
 
-        function roiCalcComparison() {
-            if (!roiBootstrap || !roiBootstrap.products || typeof RoiCalc === 'undefined') {
+        function roiProcessCustomSystem() {
+            if (!roiBootstrap || typeof RoiCalc === 'undefined') {
                 alert('ข้อมูลไม่พร้อม กรุณารอสักครู่');
                 return;
             }
-            var loadingDiv = document.getElementById('roi_compareLoading');
-            loadingDiv.classList.remove('d-none');
-
+            
+            var kwp = parseFloat(document.getElementById('roi_customKw').value) || 0;
+            var battery = parseFloat(document.getElementById('roi_customBattery').value) || 0;
+            var price = parseFloat(document.getElementById('roi_customPrice').value) || 0;
+            
+            if (kwp <= 0 && battery <= 0) {
+                alert('กรุณาระบุขนาดแผงโซลาร์ หรือ ขนาดแบตเตอรี่');
+                return;
+            }
+            if (price <= 0) {
+                alert('กรุณาระบุราคาประเมิน');
+                return;
+            }
+            
+            var customProduct = {
+                product_id: 'custom_' + Date.now(),
+                product_name: 'ระบบโซลาร์ ' + kwp + 'kWp' + (battery > 0 ? ' + แบตเตอรี่ ' + battery + 'kWh' : ''),
+                kWp: kwp,
+                kwp: kwp,
+                price: price,
+                battery_kwh: battery,
+                batteryKwh: battery,
+                status: 'active'
+            };
+            
             var session = roiGetSessionObj();
             var assumptions = roiBootstrap.assumptions || [];
             var benchmarks = roiBootstrap.benchmarks || [];
 
-            // Apply roof ratio — reduces effective PSH by roof coverage %
+            // Apply roof ratio
             var roofEl = document.getElementById('roi_roofRatio');
             var roofRatio = roofEl ? parseFloat(roofEl.value) : 1;
             if (roofRatio < 1 && assumptions.length > 0) {
@@ -2723,93 +2907,107 @@
                 });
             }
 
-            roiComparisonResults = RoiCalc.buildSystemComparison(session, roiBootstrap.products, assumptions, benchmarks);
-            loadingDiv.classList.add('d-none');
-
-            // Render table
-            var tbody = document.getElementById('roi_compareBody');
-            tbody.innerHTML = '';
-            for (var i = 0; i < roiComparisonResults.length; i++) {
-                var r = roiComparisonResults[i];
-                var tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.setAttribute('data-idx', i);
-                tr.onclick = (function (idx) {
-                    return function () { roiSelectProduct(idx); };
-                })(i);
-
-                var badges = '';
-                if (r.badges) {
-                    for (var b = 0; b < r.badges.length; b++) {
-                        var badge = r.badges[b];
-                        if (badge === 'best_npv') badges += ' <span class="roi-badge roi-badge-best">คุ้มสุด</span>';
-                        if (badge === 'fastest_payback') badges += ' <span class="roi-badge roi-badge-fast">คืนทุนเร็ว</span>';
-                        if (badge === 'best_fit') badges += ' <span class="roi-badge roi-badge-fit">size พอดี</span>';
-                    }
-                }
-
-                tr.innerHTML = '<td><input type="radio" name="roi_productSelect" value="' + i + '"' + (roiSelectedProductIdx === i ? ' checked' : '') + '></td>' +
-                    '<td><strong>' + (r.product.product_name || r.product.name || '-') + '</strong>' + badges + '</td>' +
-                    '<td>' + (r.product.kWp || r.product.kwp || '-') + '</td>' +
-                    '<td>' + (r.product.battery_kwh || r.product.batteryKwh || 0) + ' kWh</td>' +
-                    '<td><input type="number" class="form-control form-control-sm" style="width:100px;" value="' + (r.product.price || 0) + '" data-price-idx="' + i + '" onclick="event.stopPropagation()" oninput="roiOnPriceChange(' + i + ', this.value)"></td>' +
-                    '<td>' + Math.round(r.production || r.annualProduction || 0).toLocaleString() + '</td>' +
-                    '<td>' + Math.round(r.selfUse || r.annualSelfUse || 0).toLocaleString() + '</td>' +
-                    '<td>' + Math.round(r.sell || r.annualSell || 0).toLocaleString() + '</td>' +
-                    '<td>' + Math.round(r.netBill || r.annualNetBill || 0).toLocaleString() + '</td>' +
-                    '<td class="text-success fw-bold">' + Math.round(r.saving || r.annualSaving || 0).toLocaleString() + '</td>' +
-                    '<td class="fw-bold">' + (r.payback || r.paybackYears || 0).toFixed(1) + '</td>' +
-                    '<td class="fw-bold">' + Math.round(r.npv || r.npv25 || 0).toLocaleString() + '</td>';
-                tbody.appendChild(tr);
-            }
-        }
-
-        function roiOnPriceChange(idx, val) {
-            if (roiComparisonResults[idx]) {
-                roiComparisonResults[idx].product.price = parseFloat(val) || 0;
-                // Recalculate this row
-                roiCalcComparison();
-            }
-        }
-
-        function roiSelectProduct(idx) {
-            roiSelectedProductIdx = idx;
-            // Update radio buttons
-            var radios = document.querySelectorAll('input[name="roi_productSelect"]');
-            for (var i = 0; i < radios.length; i++) {
-                radios[i].checked = (parseInt(radios[i].value) === idx);
-            }
-            // Highlight row
-            var rows = document.querySelectorAll('#roi_compareBody tr');
-            for (var j = 0; j < rows.length; j++) {
-                rows[j].classList.remove('table-active');
-                if (parseInt(rows[j].getAttribute('data-idx')) === idx) {
-                    rows[j].classList.add('table-active');
-                }
-            }
+            roiComparisonResults = RoiCalc.buildSystemComparison(session, [customProduct], assumptions, benchmarks);
+            roiSelectedProductIdx = 0; // We only have 1 product now
             document.getElementById('roi_btnToFinance').disabled = false;
             roiScheduleAutoSave();
         }
 
-        function roiAddCustomSystem() {
-            var name = prompt('ชื่อระบบ:', 'Custom System');
-            if (!name) return;
-            var kwp = parseFloat(prompt('kWp:', '5')) || 5;
-            var price = parseFloat(prompt('ราคา (บาท):', '150000')) || 150000;
-            var battery = parseFloat(prompt('แบตเตอรี่ (kWh, 0 = ไม่มี):', '0')) || 0;
+        function roiAdjustInput(id, delta) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var val = parseFloat(el.value) || 0;
+            val += delta;
+            if (val < 0) val = 0;
+            el.value = val;
+            roiSuggestPrice();
+            roiScheduleAutoSave();
+        }
 
-            // Add to local products array
-            roiBootstrap.products.push({
-                product_id: 'custom_' + Date.now(),
-                product_name: name,
-                kWp: kwp,
-                kwp: kwp,
-                price: price,
-                battery_kwh: battery,
-                batteryKwh: battery,
-                status: 'active'
-            });
-            roiCalcComparison();
+        function roiComputeSmartRecommendation() {
+            var kwh = parseFloat(document.getElementById('roi_monthlyKwh').value) || 0;
+            var recWrap = document.getElementById('roi_smartRecommendation');
+            var recText = document.getElementById('roi_smartRecText');
+            
+            if (kwh <= 0) {
+                recWrap.style.display = 'none';
+                return;
+            }
+            
+            // Basic estimation: 1 kWp produces ~120 kWh/month. Let's aim to cover 70-80% of total usage.
+            var suggestedKw = Math.ceil((kwh * 0.7) / 120); 
+            if (suggestedKw < 1) suggestedKw = 1;
+            var suggestedBatt = 0;
+            
+            var session = roiGetSessionObj();
+            if (session.night_kwh > 0 || session.day_fraction < 0.5) {
+                // If high night usage, suggest some battery
+                suggestedBatt = Math.floor(suggestedKw / 5) * 5;
+                if (suggestedBatt === 0 && suggestedKw >= 3) suggestedBatt = 5;
+            }
+            
+            window.roiSmartRec = {
+                kwp: suggestedKw,
+                batt: suggestedBatt
+            };
+            
+            recText.innerHTML = 'จากค่าไฟ <strong>' + kwh + ' หน่วย/เดือน</strong><br>' +
+                                'ระบบแนะนำ: โซลาร์ <strong>' + suggestedKw + ' kWp</strong>' + 
+                                (suggestedBatt > 0 ? ' + แบตเตอรี่ <strong>' + suggestedBatt + ' kWh</strong>' : ' (ไม่ใช้แบตเตอรี่)');
+            recWrap.style.display = 'block';
+        }
+        
+        function roiApplySmartRecommendation() {
+            if (!window.roiSmartRec) return;
+            document.getElementById('roi_customKw').value = window.roiSmartRec.kwp;
+            document.getElementById('roi_customBattery').value = window.roiSmartRec.batt;
+            roiSuggestPrice();
+            roiScheduleAutoSave();
+            
+            // flash success
+            var box = document.getElementById('roi_smartRecommendation');
+            box.style.backgroundColor = '#C8E6C9';
+            setTimeout(function() { box.style.backgroundColor = '#E3F2FD'; }, 500);
+        }
+
+        function roiSuggestPrice() {
+            if (!roiBootstrap || !roiBootstrap.products) return;
+            var kwp = parseFloat(document.getElementById('roi_customKw').value) || 0;
+            var batt = parseFloat(document.getElementById('roi_customBattery').value) || 0;
+            
+            if (kwp === 0 && batt === 0) {
+                document.getElementById('roi_priceSuggestionWrap').style.display = 'none';
+                return;
+            }
+            
+            // Find closest product in database
+            var bestMatch = null;
+            var minDiff = 999999;
+            for (var i = 0; i < roiBootstrap.products.length; i++) {
+                var p = roiBootstrap.products[i];
+                var pKw = parseFloat(p.kWp || p.kwp) || 0;
+                var pBatt = parseFloat(p.battery_kwh || p.batteryKwh) || 0;
+                var diff = Math.abs(pKw - kwp)*2 + Math.abs(pBatt - batt); // Weight kWp more
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestMatch = p;
+                }
+            }
+            
+            if (bestMatch && bestMatch.price > 0) {
+                window.roiSuggestedPrice = bestMatch.price;
+                document.getElementById('roi_priceSuggestionText').textContent = 'ราคาอ้างอิงในตลาด: ประมาณ ' + bestMatch.price.toLocaleString() + ' บาท';
+                document.getElementById('roi_priceSuggestionWrap').style.display = 'block';
+            } else {
+                document.getElementById('roi_priceSuggestionWrap').style.display = 'none';
+            }
+        }
+        
+        function roiApplySuggestedPrice() {
+            if (window.roiSuggestedPrice > 0) {
+                document.getElementById('roi_customPrice').value = window.roiSuggestedPrice;
+                roiScheduleAutoSave();
+            }
         }
 
         function roiCalcFinancing() {
@@ -3180,6 +3378,30 @@
                 document.getElementById('roi_presHintWrap').style.display = 'none';
             }
 
+            // Generate Sales Script
+            var scriptEl = document.getElementById('roi_presSalesScript');
+            if (scriptEl) {
+                var scriptHtml = 'จากค่าไฟปัจจุบันประมาณ <strong>' + Math.round(bd.currentBillMo).toLocaleString() + ' บาท/เดือน</strong> ';
+                scriptHtml += 'ถ้าติดตั้งระบบขนาด <strong>' + (product.kw || product.kWp || 0) + ' kWp</strong> ';
+                if (bd.hasBattery) scriptHtml += 'พร้อมแบตเตอรี่ <strong>' + product.battery_kwh + ' kWh</strong> ';
+                scriptHtml += '<br>จะช่วยประหยัดค่าไฟได้เดือนละ <strong>' + Math.round(bd.totalSavingMo).toLocaleString() + ' บาท</strong> ';
+                if (bd.includeFit && bd.fitIncomeMo > 0) scriptHtml += '(รวมรายได้จากการขายไฟคืนการไฟฟ้าแล้ว) ';
+                
+                scriptHtml += '<br>โดยลูกค้าสามารถเลือกผ่อนกับ <strong>' + (plan.bank_label_th || plan.bank_code || 'ธนาคาร') + '</strong> ';
+                scriptHtml += 'เพียงเดือนละ <strong>' + Math.round(bd.installmentMo).toLocaleString() + ' บาท</strong> ';
+                
+                var od = Math.round(bd.outlayDelta);
+                if (od < 0) {
+                    scriptHtml += '<br><strong class="text-success">สรุปแล้ว หลังจากติดโซลาร์และจ่ายค่าผ่อนแล้ว ลูกค้าจะมีเงินเหลือในกระเป๋าเพิ่มขึ้นเดือนละ ' + Math.abs(od).toLocaleString() + ' บาททันทีครับ! (Cashflow Positive) 🎉</strong>';
+                } else if (od > 0) {
+                    scriptHtml += '<br><strong class="text-warning">เมื่อนำค่าผ่อนมารวมกับค่าไฟใหม่ ลูกค้าจะจ่ายเพิ่มจากเดิมเพียงเดือนละ ' + od.toLocaleString() + ' บาท แต่ได้เป็นเจ้าของระบบโซลาร์เซลล์เลยครับ แลกกับความคุ้มค่าในระยะยาว! 🌟</strong>';
+                } else {
+                    scriptHtml += '<br><strong class="text-primary">สรุปแล้ว หลังจากติดโซลาร์และจ่ายค่าผ่อนแล้ว ลูกค้าจ่ายเท่าเดิมเป๊ะเลยครับ แต่ได้เป็นเจ้าของระบบโซลาร์เซลล์ฟรีๆ! ☀️</strong>';
+                }
+                
+                scriptEl.innerHTML = scriptHtml;
+            }
+
             // KPI cards
             var kpi = prodResult.kpi || {};
             var totalSaving = 0;
@@ -3211,6 +3433,58 @@
 
             // 12-month schedule table
             roiRenderScheduleTable(planResult);
+        }
+
+        function roiSendToQuotation() {
+            var session = roiGetSessionObj();
+            if (!session) return;
+            
+            // Auto save before switching
+            roiAutoSave();
+
+            // Populate Quotation Form
+            var sysName = '';
+            var detail = '';
+            var price = session.selected_price || 0;
+
+            if (session.selected_kw) {
+                sysName = 'ระบบโซลาร์เซลล์ขนาด ' + session.selected_kw + ' kWp';
+                if (session.selected_battery_kwh > 0) {
+                    sysName += ' พร้อมแบตเตอรี่ ' + session.selected_battery_kwh + ' kWh';
+                }
+            }
+
+            var planLabel = '-';
+            if (roiSelectedPlanIdx >= 0 && roiFinancingResults[roiSelectedPlanIdx]) {
+                var p = roiFinancingResults[roiSelectedPlanIdx].plan;
+                planLabel = p.bank_label_th || p.bank_code || '-';
+                detail += 'แผนสินเชื่อ: ' + planLabel + '\n';
+                detail += 'ค่างวดประมาณ: ' + Math.round(session.monthly_installment || 0).toLocaleString() + ' บาท/เดือน\n';
+            }
+
+            if (session.annual_saving_yr1) {
+                detail += 'ประหยัดค่าไฟปีละ: ' + Math.round(session.annual_saving_yr1).toLocaleString() + ' บาท\n';
+            }
+            if (session.selected_payback_yr) {
+                detail += 'คืนทุนประมาณ: ' + Number(session.selected_payback_yr).toFixed(1) + ' ปี\n';
+            }
+
+            var qSysNameEl = document.getElementById('q_sysName');
+            var qDetailEl = document.getElementById('q_detail');
+            var qTotalEl = document.getElementById('q_total');
+
+            if (qSysNameEl) qSysNameEl.value = sysName;
+            if (qDetailEl) qDetailEl.value = detail;
+            if (qTotalEl) qTotalEl.value = price;
+
+            // Switch Tab using Bootstrap 5 API
+            var quotationTabEl = document.getElementById('quotation-tab');
+            if (quotationTabEl) {
+                var tab = new bootstrap.Tab(quotationTabEl);
+                tab.show();
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         function roiDrawCashflowChart(prodResult) {
