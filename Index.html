@@ -1349,6 +1349,20 @@
         var roiSession = null;
         var roiAutoSaveTimer = null;
 
+        // ==================== Shared Helpers ====================
+        // HTML-escape strings before interpolating into innerHTML. Treat
+        // every untrusted value (sheet content, user input, generated IDs)
+        // as needing this. Returns '' for null/undefined.
+        function _esc(s) {
+            if (s === null || s === undefined) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // ==================== Loading Overlay ====================
         function showLoading(msg) {
             document.getElementById('loadingMsg').textContent = msg || 'กำลังดึงข้อมูล...';
@@ -3057,9 +3071,14 @@
         var adminEditPlanId = null;
         var adminEditTierId = null;
 
-        document.getElementById('admin-tab').addEventListener('shown.bs.tab', function() {
+        document.getElementById('admin-tab').addEventListener('shown.bs.tab', function () {
             if (adminPlans.length === 0) adminLoadData();
         });
+        // Bind delegated click handler once on the table body, not per row.
+        (function () {
+            var tbody = document.getElementById('admin_planBody');
+            if (tbody) tbody.addEventListener('click', _adminHandleTableClick);
+        })();
 
         function adminLoadData() {
             showLoading('กำลังโหลดข้อมูล Admin...');
@@ -3094,46 +3113,51 @@
                 return;
             }
             emptyMsg.classList.add('d-none');
+
+            // Group tiers by plan_id once instead of filtering inside the
+            // render loop (was O(plans × tiers); now O(plans + tiers)).
+            var tiersByPlan = {};
+            for (var t = 0; t < adminAllTiers.length; t++) {
+                var pid = adminAllTiers[t].plan_id;
+                if (!pid) continue;
+                if (!tiersByPlan[pid]) tiersByPlan[pid] = [];
+                tiersByPlan[pid].push(adminAllTiers[t]);
+            }
+
+            // Build the whole table as a single HTML string, then inject
+            // once — fewer reflows than appending row-by-row. Every
+            // interpolated value goes through _esc so quotes/angle brackets
+            // in sheet data can't break out of attributes or inject markup.
+            var html = '';
             for (var i = 0; i < adminPlans.length; i++) {
                 var p = adminPlans[i];
                 var isActive = (p.status === 'active');
                 var statusBadge = isActive
                     ? '<span class="admin-badge-active">active</span>'
-                    : '<span class="admin-badge-inactive">' + (p.status || 'draft') + '</span>';
+                    : '<span class="admin-badge-inactive">' + _esc(p.status || 'draft') + '</span>';
                 var expanded = (adminExpandedPlanId === p.plan_id);
                 var chevron = expanded ? '&#9660;' : '&#9654;';
+                var pidAttr = _esc(p.plan_id || '');
 
-                // Plan row
-                var tr = document.createElement('tr');
-                tr.className = 'admin-plan-row';
-                tr.setAttribute('data-plan-id', p.plan_id);
-                tr.innerHTML =
-                    '<td class="text-center" style="font-size:0.7rem;color:#999">' + chevron + '</td>' +
-                    '<td><strong>' + (p.plan_id || '') + '</strong></td>' +
-                    '<td>' + (p.bank_label_th || p.bank_code || '') + '</td>' +
-                    '<td>' + (p.product_name_th || '') + '</td>' +
-                    '<td><span class="small">' + (p.financing_type || '') + ' / ' + (p.rate_type || '') + '</span></td>' +
-                    '<td>' + (p.term_min_months || 0) + '-' + (p.term_max_months || 0) + '</td>' +
-                    '<td>' + statusBadge + '</td>' +
-                    '<td>' +
-                        '<button class="btn btn-sm btn-outline-ocean py-0 px-2 me-1" onclick="adminEditPlan(\'' + (p.plan_id || '') + '\'); event.stopPropagation();">แก้ไข</button>' +
-                        (isActive ? '<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="adminConfirmDeactivate(\'' + (p.plan_id || '') + '\'); event.stopPropagation();">ปิด</button>' : '') +
-                    '</td>';
-                (function(pid) {
-                    tr.addEventListener('click', function(e) {
-                        if (e.target.tagName === 'BUTTON') return;
-                        adminTogglePlan(pid);
-                    });
-                })(p.plan_id);
-                tbody.appendChild(tr);
+                html +=
+                    '<tr class="admin-plan-row" data-plan-id="' + pidAttr + '" data-action="toggle">' +
+                        '<td class="text-center" style="font-size:0.7rem;color:#999">' + chevron + '</td>' +
+                        '<td><strong>' + _esc(p.plan_id) + '</strong></td>' +
+                        '<td>' + _esc(p.bank_label_th || p.bank_code) + '</td>' +
+                        '<td>' + _esc(p.product_name_th) + '</td>' +
+                        '<td><span class="small">' + _esc(p.financing_type) + ' / ' + _esc(p.rate_type) + '</span></td>' +
+                        '<td>' + _esc(p.term_min_months || 0) + '-' + _esc(p.term_max_months || 0) + '</td>' +
+                        '<td>' + statusBadge + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-outline-ocean py-0 px-2 me-1" data-action="edit-plan" data-plan-id="' + pidAttr + '">แก้ไข</button>' +
+                            (isActive
+                                ? '<button class="btn btn-sm btn-outline-danger py-0 px-2" data-action="deactivate-plan" data-plan-id="' + pidAttr + '">ปิด</button>'
+                                : '') +
+                        '</td>' +
+                    '</tr>';
 
-                // Detail row (tiers for this plan)
-                var detailTr = document.createElement('tr');
-                detailTr.className = 'admin-detail-row';
-                detailTr.id = 'admin-detail-' + (p.plan_id || '').replace(/[^a-zA-Z0-9]/g, '_');
-                if (!expanded) detailTr.style.display = 'none';
-                var tiers = adminAllTiers.filter(function(t) { return t.plan_id === p.plan_id; });
-                var tiersHtml = '';
+                var tiers = tiersByPlan[p.plan_id] || [];
+                var tiersHtml;
                 if (tiers.length === 0) {
                     tiersHtml = '<p class="text-muted small mb-2">ไม่มี tier</p>';
                 } else {
@@ -3142,31 +3166,55 @@
                         '<th>Tier ID</th><th>Term</th><th>Down%</th><th>Month</th><th>Rate</th><th>Seq</th><th>Note</th><th></th>' +
                         '</tr></thead><tbody>';
                     for (var j = 0; j < tiers.length; j++) {
-                        var t = tiers[j];
-                        var rateDisplay = t.rate_value ? (Number(t.rate_value) * 100).toFixed(2) + '%'
-                            : (t.reference_offset ? 'ref ' + t.reference_offset : '-');
+                        var tr = tiers[j];
+                        var tidAttr = _esc(tr.tier_id || '');
+                        var rateDisplay = tr.rate_value
+                            ? (Number(tr.rate_value) * 100).toFixed(2) + '%'
+                            : (tr.reference_offset ? 'ref ' + _esc(tr.reference_offset) : '-');
                         tiersHtml += '<tr class="admin-tier-row">' +
-                            '<td>' + (t.tier_id || '') + '</td>' +
-                            '<td>' + (t.applies_to_term_months || '*') + '</td>' +
-                            '<td>' + (t.applies_to_down_percent || '*') + '</td>' +
-                            '<td>' + (t.from_month || 0) + '-' + (t.to_month || 0) + '</td>' +
+                            '<td>' + _esc(tr.tier_id) + '</td>' +
+                            '<td>' + _esc(tr.applies_to_term_months || '*') + '</td>' +
+                            '<td>' + _esc(tr.applies_to_down_percent || '*') + '</td>' +
+                            '<td>' + _esc(tr.from_month || 0) + '-' + _esc(tr.to_month || 0) + '</td>' +
                             '<td>' + rateDisplay + '</td>' +
-                            '<td>' + (t.sequence || '') + '</td>' +
-                            '<td class="small">' + (t.note_th || '') + '</td>' +
+                            '<td>' + _esc(tr.sequence) + '</td>' +
+                            '<td class="small">' + _esc(tr.note_th) + '</td>' +
                             '<td nowrap>' +
-                                '<button class="btn btn-sm btn-outline-ocean py-0 px-2 me-1" onclick="adminEditTier(\'' + (t.tier_id || '') + '\')">แก้ไข</button>' +
-                                '<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="adminConfirmDeleteTier(\'' + (t.tier_id || '') + '\')">ลบ</button>' +
+                                '<button class="btn btn-sm btn-outline-ocean py-0 px-2 me-1" data-action="edit-tier" data-tier-id="' + tidAttr + '">แก้ไข</button>' +
+                                '<button class="btn btn-sm btn-outline-danger py-0 px-2" data-action="delete-tier" data-tier-id="' + tidAttr + '">ลบ</button>' +
                             '</td></tr>';
                     }
                     tiersHtml += '</tbody></table>';
                 }
-                tiersHtml += '<button class="btn btn-sm btn-ocean" onclick="adminOpenNewTierModal(\'' + (p.plan_id || '') + '\')">+ เพิ่ม Tier</button>';
+                tiersHtml += '<button class="btn btn-sm btn-ocean" data-action="add-tier" data-plan-id="' + pidAttr + '">+ เพิ่ม Tier</button>';
 
-                var td = document.createElement('td');
-                td.colSpan = 8;
-                td.innerHTML = '<div class="admin-detail-inner"><strong class="small text-muted">Rate Tiers:</strong>' + tiersHtml + '</div>';
-                detailTr.appendChild(td);
-                tbody.appendChild(detailTr);
+                var hideStyle = expanded ? '' : ' style="display:none"';
+                html += '<tr class="admin-detail-row"' + hideStyle + '>' +
+                    '<td colspan="8"><div class="admin-detail-inner"><strong class="small text-muted">Rate Tiers:</strong>' + tiersHtml + '</div></td>' +
+                    '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        // Single delegated click handler covers every action button in the
+        // admin table — replaces ~8 inline onclick handlers per plan row.
+        // Handlers are bound once at page load, not re-bound on each render.
+        function _adminHandleTableClick(e) {
+            var target = e.target.closest('[data-action]');
+            if (!target) return;
+            var action = target.getAttribute('data-action');
+            var planId = target.getAttribute('data-plan-id');
+            var tierId = target.getAttribute('data-tier-id');
+            switch (action) {
+                case 'edit-plan':       e.stopPropagation(); adminEditPlan(planId); break;
+                case 'deactivate-plan': e.stopPropagation(); adminConfirmDeactivate(planId); break;
+                case 'add-tier':        e.stopPropagation(); adminOpenNewTierModal(planId); break;
+                case 'edit-tier':       e.stopPropagation(); adminEditTier(tierId); break;
+                case 'delete-tier':     e.stopPropagation(); adminConfirmDeleteTier(tierId); break;
+                case 'toggle':
+                    if (e.target.tagName === 'BUTTON') return;
+                    adminTogglePlan(planId);
+                    break;
             }
         }
 
@@ -3332,87 +3380,96 @@
             'status','effective_from','effective_to'
         ];
         var _adminPlanBooleans = ['tax_deduction_eligible','requires_collateral','requires_fire_insurance','requires_credit_card_of_bank'];
+        var _adminPlanNumeric = ['term_min_months','term_max_months','term_step_months','price_min','price_max','processing_fee','monthly_fee'];
+
+        // Lazy DOM-ref cache for the plan-edit form. Built on first use,
+        // then reused across fill/clear/read instead of doing N getElementById
+        // calls per operation. Filter(Boolean) drops any field whose input is
+        // missing from the modal so we don't pollute the cache with nulls.
+        var _adminPlanEls = null;
+        function _adminGetPlanEls() {
+            if (_adminPlanEls) return _adminPlanEls;
+            _adminPlanEls = {
+                fields: _adminPlanFields.map(function (n) { return { name: n, el: document.getElementById('ap_' + n) }; }).filter(function (x) { return x.el; }),
+                bools:  _adminPlanBooleans.map(function (n) { return { name: n, el: document.getElementById('ap_' + n) }; }).filter(function (x) { return x.el; }),
+                planIdEl: document.getElementById('ap_plan_id'),
+                statusEl: document.getElementById('ap_status')
+            };
+            return _adminPlanEls;
+        }
 
         function adminClearPlanForm() {
-            for (var i = 0; i < _adminPlanFields.length; i++) {
-                var el = document.getElementById('ap_' + _adminPlanFields[i]);
-                if (el) el.value = '';
-            }
-            for (var j = 0; j < _adminPlanBooleans.length; j++) {
-                var cb = document.getElementById('ap_' + _adminPlanBooleans[j]);
-                if (cb) cb.checked = false;
-            }
-            document.getElementById('ap_status').value = 'active';
-            document.getElementById('ap_plan_id').readOnly = false;
+            var c = _adminGetPlanEls();
+            for (var i = 0; i < c.fields.length; i++) c.fields[i].el.value = '';
+            for (var j = 0; j < c.bools.length; j++)  c.bools[j].el.checked = false;
+            if (c.statusEl) c.statusEl.value = 'active';
+            if (c.planIdEl) c.planIdEl.readOnly = false;
         }
 
         function adminFillPlanForm(plan) {
-            for (var i = 0; i < _adminPlanFields.length; i++) {
-                var el = document.getElementById('ap_' + _adminPlanFields[i]);
-                if (el && plan[_adminPlanFields[i]] !== undefined && plan[_adminPlanFields[i]] !== null) {
-                    var v = plan[_adminPlanFields[i]];
-                    if (v instanceof Date) v = v.toISOString().substring(0, 10);
-                    el.value = v;
-                } else if (el) {
-                    el.value = '';
-                }
+            var c = _adminGetPlanEls();
+            for (var i = 0; i < c.fields.length; i++) {
+                var f = c.fields[i];
+                var v = plan[f.name];
+                if (v === undefined || v === null) { f.el.value = ''; continue; }
+                if (v instanceof Date) v = v.toISOString().substring(0, 10);
+                f.el.value = v;
             }
-            for (var j = 0; j < _adminPlanBooleans.length; j++) {
-                var cb = document.getElementById('ap_' + _adminPlanBooleans[j]);
-                if (cb) cb.checked = (plan[_adminPlanBooleans[j]] === true || plan[_adminPlanBooleans[j]] === 'TRUE');
+            for (var j = 0; j < c.bools.length; j++) {
+                var b = c.bools[j];
+                b.el.checked = (plan[b.name] === true || plan[b.name] === 'TRUE');
             }
-            document.getElementById('ap_plan_id').readOnly = true;
+            if (c.planIdEl) c.planIdEl.readOnly = true;
         }
 
         function adminReadPlanForm() {
+            var c = _adminGetPlanEls();
             var obj = {};
-            for (var i = 0; i < _adminPlanFields.length; i++) {
-                var el = document.getElementById('ap_' + _adminPlanFields[i]);
-                obj[_adminPlanFields[i]] = el ? el.value : '';
-            }
-            for (var j = 0; j < _adminPlanBooleans.length; j++) {
-                var cb = document.getElementById('ap_' + _adminPlanBooleans[j]);
-                obj[_adminPlanBooleans[j]] = cb ? (cb.checked ? 'TRUE' : 'FALSE') : 'FALSE';
-            }
-            // numeric conversions
-            var nums = ['term_min_months','term_max_months','term_step_months','price_min','price_max','processing_fee','monthly_fee'];
-            for (var k = 0; k < nums.length; k++) {
-                if (obj[nums[k]]) obj[nums[k]] = parseFloat(obj[nums[k]]) || 0;
+            for (var i = 0; i < c.fields.length; i++) obj[c.fields[i].name] = c.fields[i].el.value;
+            for (var j = 0; j < c.bools.length; j++)  obj[c.bools[j].name] = c.bools[j].el.checked ? 'TRUE' : 'FALSE';
+            for (var k = 0; k < _adminPlanNumeric.length; k++) {
+                var key = _adminPlanNumeric[k];
+                if (obj[key]) obj[key] = parseFloat(obj[key]) || 0;
             }
             return obj;
         }
 
         var _adminTierFields = ['tier_id','plan_id','applies_to_term_months','applies_to_down_percent',
             'from_month','to_month','rate_type_override','rate_value','reference_offset','sequence','note_th'];
+        var _adminTierNumeric = ['from_month','to_month','rate_value','reference_offset','sequence'];
+
+        var _adminTierEls = null;
+        function _adminGetTierEls() {
+            if (_adminTierEls) return _adminTierEls;
+            _adminTierEls = {
+                fields: _adminTierFields.map(function (n) { return { name: n, el: document.getElementById('at_' + n) }; }).filter(function (x) { return x.el; }),
+                sequenceEl: document.getElementById('at_sequence')
+            };
+            return _adminTierEls;
+        }
 
         function adminClearTierForm() {
-            for (var i = 0; i < _adminTierFields.length; i++) {
-                var el = document.getElementById('at_' + _adminTierFields[i]);
-                if (el) el.value = '';
-            }
-            document.getElementById('at_sequence').value = '1';
+            var c = _adminGetTierEls();
+            for (var i = 0; i < c.fields.length; i++) c.fields[i].el.value = '';
+            if (c.sequenceEl) c.sequenceEl.value = '1';
         }
 
         function adminFillTierForm(tier) {
-            for (var i = 0; i < _adminTierFields.length; i++) {
-                var el = document.getElementById('at_' + _adminTierFields[i]);
-                if (el && tier[_adminTierFields[i]] !== undefined && tier[_adminTierFields[i]] !== null) {
-                    el.value = tier[_adminTierFields[i]];
-                } else if (el) {
-                    el.value = '';
-                }
+            var c = _adminGetTierEls();
+            for (var i = 0; i < c.fields.length; i++) {
+                var f = c.fields[i];
+                var v = tier[f.name];
+                f.el.value = (v === undefined || v === null) ? '' : v;
             }
         }
 
         function adminReadTierForm() {
+            var c = _adminGetTierEls();
             var obj = {};
-            for (var i = 0; i < _adminTierFields.length; i++) {
-                var el = document.getElementById('at_' + _adminTierFields[i]);
-                obj[_adminTierFields[i]] = el ? el.value : '';
-            }
-            var nums = ['from_month','to_month','rate_value','reference_offset','sequence'];
-            for (var k = 0; k < nums.length; k++) {
-                if (obj[nums[k]]) obj[nums[k]] = parseFloat(obj[nums[k]]) || 0;
+            for (var i = 0; i < c.fields.length; i++) obj[c.fields[i].name] = c.fields[i].el.value;
+            for (var k = 0; k < _adminTierNumeric.length; k++) {
+                var key = _adminTierNumeric[k];
+                if (obj[key]) obj[key] = parseFloat(obj[key]) || 0;
             }
             return obj;
         }
