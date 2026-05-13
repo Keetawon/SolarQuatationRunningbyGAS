@@ -478,3 +478,364 @@ function getQuotationList() {
     }).filter(function(q) { return q.id; });
   } catch (e) { return []; }
 }
+
+// ============================= ROI Helper Backend =============================
+
+function getBootstrapRoiData() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get('roi_bootstrap_v1');
+    if (cached) return JSON.parse(cached);
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var result = {
+      appliances: [],
+      solarProducts: [],
+      financingPlans: [],
+      financingRateTiers: [],
+      rateBenchmarks: {},
+      roiAssumptions: {},
+      electricityTariffs: []
+    };
+
+    var aSheet = ss.getSheetByName('appliance_preset');
+    if (aSheet) {
+      var aData = aSheet.getDataRange().getValues();
+      result.appliances = aData.slice(1).filter(function(r) {
+        return r[0] && r[11] !== 'inactive';
+      }).map(function(r) {
+        return {
+          appliance_id: String(r[0]),
+          name_th: String(r[1]),
+          name_en: String(r[2] || ''),
+          category: String(r[3] || ''),
+          default_watts: Number(r[4]) || 0,
+          watt_options: String(r[5] || ''),
+          inverter: r[6] === true || r[6] === 'TRUE',
+          typical_day_hours: Number(r[7]) || 0,
+          typical_night_hours: Number(r[8]) || 0,
+          typical_duty_cycle: Number(r[9]) || 1
+        };
+      });
+    }
+
+    var spSheet = ss.getSheetByName('solar_products');
+    if (spSheet) {
+      var spData = spSheet.getDataRange().getValues();
+      result.solarProducts = spData.slice(1).filter(function(r) {
+        return r[0] && r[8] !== 'inactive';
+      }).map(function(r) {
+        return {
+          product_id: String(r[0]),
+          name: String(r[1]),
+          type: String(r[2] || 'on-grid'),
+          kw: Number(r[3]) || 0,
+          price: Number(r[4]) || 0,
+          battery_kwh: Number(r[5]) || 0,
+          electric_phase: Number(r[6]) || 1,
+          self_consume: Number(r[7]) || 0.55
+        };
+      });
+    }
+
+    var fpSheet = ss.getSheetByName('financing_plan');
+    if (fpSheet) {
+      var fpData = fpSheet.getDataRange().getValues();
+      result.financingPlans = fpData.slice(1).filter(function(r) {
+        return r[0] && r[24] !== 'inactive';
+      }).map(function(r) {
+        return {
+          plan_id: String(r[0]),
+          bank_code: String(r[1] || ''),
+          bank_label_th: String(r[2] || ''),
+          product_name_th: String(r[3] || ''),
+          financing_type: String(r[5] || ''),
+          rate_type: String(r[6] || 'flat'),
+          rate_basis: String(r[7] || 'fixed'),
+          rate_reference: String(r[8] || ''),
+          term_min_months: Number(r[9]) || 0,
+          term_max_months: Number(r[10]) || 240,
+          term_step_months: Number(r[11]) || 12,
+          price_min: Number(r[12]) || 0,
+          price_max: Number(r[13]) || 9999999,
+          down_percent_options: String(r[14] || '0'),
+          processing_fee: Number(r[15]) || 0,
+          monthly_fee: Number(r[16]) || 0,
+          tax_deduction_eligible: r[17] === true || r[17] === 'TRUE',
+          requires_collateral: r[18] === true || r[18] === 'TRUE',
+          requires_credit_card_of_bank: r[20] === true || r[20] === 'TRUE',
+          recommend_tags: String(r[21] || ''),
+          note_th: String(r[23] || '')
+        };
+      });
+    }
+
+    var frtSheet = ss.getSheetByName('financing_rate_tier');
+    if (frtSheet) {
+      var frtData = frtSheet.getDataRange().getValues();
+      result.financingRateTiers = frtData.slice(1).filter(function(r) {
+        return r[0];
+      }).map(function(r) {
+        return {
+          tier_id: String(r[0]),
+          plan_id: String(r[1]),
+          applies_to_term_months: String(r[2] || '*'),
+          applies_to_down_percent: String(r[3] || '*'),
+          from_month: Number(r[4]) || 1,
+          to_month: Number(r[5]) || 9999,
+          rate_type_override: String(r[6] || ''),
+          rate_value: (r[7] !== '' && r[7] !== null && r[7] !== undefined) ? Number(r[7]) : null,
+          reference_offset: (r[8] !== '' && r[8] !== null && r[8] !== undefined) ? Number(r[8]) : null,
+          sequence: Number(r[9]) || 1,
+          note_th: String(r[10] || '')
+        };
+      });
+    }
+
+    var rbSheet = ss.getSheetByName('rate_benchmark');
+    if (rbSheet) {
+      var rbData = rbSheet.getDataRange().getValues();
+      rbData.slice(1).forEach(function(r) {
+        if (r[0] && r[4] !== 'archived') {
+          result.rateBenchmarks[String(r[0])] = Number(r[1]) || 0;
+        }
+      });
+    }
+
+    var raSheet = ss.getSheetByName('roi_assumption');
+    if (raSheet) {
+      var raData = raSheet.getDataRange().getValues();
+      raData.slice(1).forEach(function(r) {
+        if (r[0] && r[15] !== 'inactive') {
+          result.roiAssumptions[String(r[0])] = {
+            assumption_id: String(r[0]),
+            region: String(r[1] || ''),
+            peak_sun_hours: Number(r[2]) || 4.5,
+            performance_ratio: Number(r[3]) || 0.85,
+            panel_degradation_yr: Number(r[4]) || 0.005,
+            system_life_yr: Number(r[5]) || 25,
+            battery_dod: Number(r[6]) || 0.9,
+            battery_round_trip: Number(r[7]) || 0.92,
+            electricity_escalation_yr: Number(r[10]) || 0.03,
+            discount_rate: Number(r[11]) || 0.05,
+            fit_price: Number(r[12]) || 2.2,
+            maintenance_yr: Number(r[13]) || 3500,
+            vat_rate: Number(r[14]) || 0.07
+          };
+        }
+      });
+    }
+
+    var etSheet = ss.getSheetByName('electricity_tariff');
+    if (etSheet) {
+      var etData = etSheet.getDataRange().getValues();
+      result.electricityTariffs = etData.slice(1).filter(function(r) {
+        return r[0] && r[10] !== 'inactive';
+      }).map(function(r) {
+        return {
+          tariff_id: String(r[0]),
+          authority: String(r[1]),
+          tariff_code: String(r[2]),
+          from_kwh: Number(r[4]) || 0,
+          to_kwh: Number(r[5]) || 999999,
+          rate_per_kwh: Number(r[6]) || 0,
+          ft_charge: Number(r[7]) || 0,
+          service_charge: Number(r[8]) || 0
+        };
+      });
+    }
+
+    try { cache.put('roi_bootstrap_v1', JSON.stringify(result), 600); } catch (ce) {}
+    return result;
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function saveRoiSession(sessionData) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('roi_session');
+    if (!sheet) {
+      sheet = ss.insertSheet('roi_session');
+      sheet.appendRow(['session_id','created_by','created_at','last_updated','status','customer_label','phase','authority','tariff_id','monthly_bill','monthly_kwh','day_fraction','day_kwh','night_kwh','usage_source','include_fit','existing_solar','assumption_id_fk','selected_product_id_fk','selected_kw','selected_price','selected_battery_kwh','selected_payback_yr','selected_npv25','annual_saving_yr1','selected_plan_id_fk','selected_term_months','selected_down_percent','selected_rank_strategy','monthly_installment','monthly_saving','monthly_net','total_interest','notes']);
+    }
+
+    var now = new Date();
+    var sessionId = sessionData.session_id || '';
+    var isUpdate = false;
+    var rowIndex = -1;
+
+    if (sessionId) {
+      var existing = sheet.getDataRange().getValues();
+      for (var i = 1; i < existing.length; i++) {
+        if (existing[i][0] && existing[i][0].toString() === sessionId) {
+          isUpdate = true;
+          rowIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (!isUpdate) {
+      sessionId = generateRunningID('roi_session', 'ROI');
+    }
+
+    var userEmail = '-';
+    try { userEmail = Session.getActiveUser().getEmail(); } catch (ue) {}
+
+    var row = [
+      sessionId,
+      userEmail,
+      now,
+      now,
+      sessionData.status || 'draft',
+      sessionData.customer_label || '',
+      sessionData.phase || 1,
+      sessionData.authority || 'MEA',
+      sessionData.tariff_id || '',
+      Number(sessionData.monthly_bill) || 0,
+      Number(sessionData.monthly_kwh) || 0,
+      Number(sessionData.day_fraction) || 0,
+      Number(sessionData.day_kwh) || 0,
+      Number(sessionData.night_kwh) || 0,
+      sessionData.usage_source || '',
+      sessionData.include_fit ? true : false,
+      sessionData.existing_solar ? true : false,
+      sessionData.assumption_id_fk || 'DEFAULT',
+      sessionData.selected_product_id_fk || '',
+      Number(sessionData.selected_kw) || 0,
+      Number(sessionData.selected_price) || 0,
+      Number(sessionData.selected_battery_kwh) || 0,
+      Number(sessionData.selected_payback_yr) || 0,
+      Number(sessionData.selected_npv25) || 0,
+      Number(sessionData.annual_saving_yr1) || 0,
+      sessionData.selected_plan_id_fk || '',
+      Number(sessionData.selected_term_months) || 0,
+      Number(sessionData.selected_down_percent) || 0,
+      sessionData.selected_rank_strategy || 'net',
+      Number(sessionData.monthly_installment) || 0,
+      Number(sessionData.monthly_saving) || 0,
+      Number(sessionData.monthly_net) || 0,
+      Number(sessionData.total_interest) || 0,
+      sessionData.notes || ''
+    ];
+
+    if (isUpdate) {
+      var existingRow = sheet.getRange(rowIndex, 1, 1, 3).getValues()[0];
+      row[1] = existingRow[1];
+      row[2] = existingRow[2];
+      sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+    } else {
+      sheet.appendRow(row);
+    }
+
+    if (sessionData.appliances && sessionData.appliances.length > 0) {
+      _saveRoiSessionAppliances(ss, sessionId, sessionData.appliances);
+    }
+
+    return { status: 'success', session_id: sessionId };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function _saveRoiSessionAppliances(ss, sessionId, appliances) {
+  var sheet = ss.getSheetByName('roi_session_appliance');
+  if (!sheet) {
+    sheet = ss.insertSheet('roi_session_appliance');
+    sheet.appendRow(['row_id','session_id_fk','appliance_id_fk','custom_name','quantity','watts','day_hours','night_hours','inverter','duty_cycle','kwh_day_per_month','kwh_night_per_month']);
+  }
+  var data = sheet.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (data[i][1] && data[i][1].toString() === sessionId) {
+      sheet.deleteRow(i + 1);
+    }
+  }
+  appliances.forEach(function(a) {
+    sheet.appendRow([
+      'RSA-' + sessionId + '-' + Utilities.getUuid().substring(0, 8),
+      sessionId,
+      a.appliance_id_fk || '',
+      a.custom_name || '',
+      Number(a.quantity) || 1,
+      Number(a.watts) || 0,
+      Number(a.day_hours) || 0,
+      Number(a.night_hours) || 0,
+      a.inverter ? true : false,
+      Number(a.duty_cycle) || 1,
+      Number(a.kwh_day_per_month) || 0,
+      Number(a.kwh_night_per_month) || 0
+    ]);
+  });
+}
+
+function searchRoiSessions(query) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('roi_session');
+    if (!sheet) return [];
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    var q = (query || '').toString().trim().toLowerCase();
+    return data.slice(1).filter(function(row) {
+      if (!row[0]) return false;
+      var label = (row[5] || '').toString().toLowerCase();
+      var id = (row[0] || '').toString().toLowerCase();
+      return !q || label.indexOf(q) >= 0 || id.indexOf(q) >= 0;
+    }).map(function(row) {
+      return {
+        session_id: String(row[0]),
+        customer_label: String(row[5] || ''),
+        status: String(row[4] || 'draft'),
+        last_updated: row[3] instanceof Date ? row[3].toISOString() : String(row[3] || ''),
+        selected_product_id_fk: String(row[18] || ''),
+        monthly_net: Number(row[31]) || 0
+      };
+    }).slice(0, 20);
+  } catch (e) {
+    return [];
+  }
+}
+
+function loadRoiSession(sessionId) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('roi_session');
+    if (!sheet) return null;
+    var data = sheet.getDataRange().getValues();
+    var COLS = ['session_id','created_by','created_at','last_updated','status','customer_label','phase','authority','tariff_id','monthly_bill','monthly_kwh','day_fraction','day_kwh','night_kwh','usage_source','include_fit','existing_solar','assumption_id_fk','selected_product_id_fk','selected_kw','selected_price','selected_battery_kwh','selected_payback_yr','selected_npv25','annual_saving_yr1','selected_plan_id_fk','selected_term_months','selected_down_percent','selected_rank_strategy','monthly_installment','monthly_saving','monthly_net','total_interest','notes'];
+    for (var i = 1; i < data.length; i++) {
+      if (!data[i][0] || data[i][0].toString() !== sessionId) continue;
+      var obj = {};
+      COLS.forEach(function(h, idx) {
+        var v = data[i][idx];
+        obj[h] = v instanceof Date ? v.toISOString() : (v !== undefined ? v : '');
+      });
+      var aSheet = ss.getSheetByName('roi_session_appliance');
+      if (aSheet) {
+        var aData = aSheet.getDataRange().getValues();
+        obj.appliances = aData.slice(1).filter(function(r) {
+          return r[1] && r[1].toString() === sessionId;
+        }).map(function(r) {
+          return {
+            appliance_id_fk: String(r[2] || ''),
+            custom_name: String(r[3] || ''),
+            quantity: Number(r[4]) || 1,
+            watts: Number(r[5]) || 0,
+            day_hours: Number(r[6]) || 0,
+            night_hours: Number(r[7]) || 0,
+            inverter: r[8] === true || r[8] === 'TRUE',
+            duty_cycle: Number(r[9]) || 1
+          };
+        });
+      } else {
+        obj.appliances = [];
+      }
+      return obj;
+    }
+    return null;
+  } catch (e) {
+    return { error: e.message };
+  }
+}
