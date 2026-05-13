@@ -1837,6 +1837,16 @@
             roiTabEl.addEventListener('shown.bs.tab', function () {
                 roiInit();
             });
+            // Bootstrap's `shown.bs.tab` does NOT fire for a tab that is already
+            // active on initial page load. ROI Helper is the default active tab,
+            // so trigger roiInit once on DOM ready as well.
+            if (roiTabEl.classList.contains('active')) {
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', roiInit);
+                } else {
+                    roiInit();
+                }
+            }
         }
 
         function roiInit() {
