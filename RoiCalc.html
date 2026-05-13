@@ -174,18 +174,29 @@ var RoiCalc = (function () {
     }
   }
 
+  // Normalize a down-payment value to integer-percent space (0-100).
+  // CSV authors mix two conventions: fractional ("0.20" = 20%) and
+  // percent ("20" = 20%). UI always emits percent. Anything <= 1 is
+  // treated as a fraction; anything > 1 is treated as already-percent.
+  function _normalizeDownPct(v) {
+    var n = parseFloat(v);
+    if (isNaN(n)) return NaN;
+    return n <= 1 ? n * 100 : n;
+  }
+
   function _filterTiers(tiers, planId, termMonths, downPct) {
+    var targetPct = _normalizeDownPct(downPct);
     return tiers.filter(function (t) {
       if (t.plan_id !== planId) return false;
       var terms = t.applies_to_term_months.toString().split(',');
       if (terms.indexOf('*') === -1 && terms.indexOf(String(termMonths)) === -1) return false;
       var downs = t.applies_to_down_percent.toString().split(',');
-      // compare as numbers to handle '0.1' vs '0.10'
-      if (downs.indexOf('*') === -1) {
-        var downMatch = downs.some(function (d) { return Math.abs(Number(d) - Number(downPct)) < 0.001; });
-        if (!downMatch) return false;
-      }
-      return true;
+      if (downs.indexOf('*') !== -1) return true;
+      var downMatch = downs.some(function (d) {
+        var dp = _normalizeDownPct(d);
+        return !isNaN(dp) && Math.abs(dp - targetPct) < 0.5;
+      });
+      return downMatch;
     }).sort(function (a, b) { return a.from_month - b.from_month; });
   }
 
@@ -500,24 +511,17 @@ var RoiCalc = (function () {
   }
 
   // Match a UI down-payment percent (0-100 integer) against a plan's
-  // down_percent_options column, which may be authored as either:
-  //   - fractional list "0.10,0.15,0.20"  (one-tenth = 10%)
-  //   - integer percent list "10,15,20"
-  //   - single value "0" or "1"
-  //   - wildcard "*"
+  // down_percent_options column. See _normalizeDownPct for the
+  // fraction-vs-percent convention.
   function _matchesDownOption(rawOptions, downPct) {
     if (rawOptions === undefined || rawOptions === null || rawOptions === '') return true;
-    var optionsStr = rawOptions.toString();
-    var parts = optionsStr.split(',').map(function (s) { return s.trim(); });
+    var parts = rawOptions.toString().split(',').map(function (s) { return s.trim(); });
     if (parts.indexOf('*') !== -1) return true;
-    var target = Number(downPct);
+    var target = _normalizeDownPct(downPct);
     if (isNaN(target)) return false;
     for (var i = 0; i < parts.length; i++) {
-      var n = parseFloat(parts[i]);
-      if (isNaN(n)) continue;
-      // Values <= 1 are fractions (0.10 → 10%); >1 are already percent.
-      var asPct = n <= 1 ? n * 100 : n;
-      if (Math.abs(asPct - target) < 0.5) return true;
+      var asPct = _normalizeDownPct(parts[i]);
+      if (!isNaN(asPct) && Math.abs(asPct - target) < 0.5) return true;
     }
     return false;
   }

@@ -437,7 +437,11 @@
                                 <input type="text" id="roi_customerLabel" class="form-control" placeholder="เลขที่ - ชื่อ" oninput="roiScheduleAutoSave()">
                             </div>
                             <div class="col-12">
-                                <label class="form-label fw-bold">เฟสไฟฟ้า</label>
+                                <label class="form-label fw-bold">
+                                    เฟสไฟฟ้า
+                                    <span class="badge bg-info text-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
+                                          title="ดูจากมิเตอร์/บิลค่าไฟ — 1 เฟส = บ้านพักทั่วไป (สายไฟเข้า 2 เส้น), 3 เฟส = บ้านใหญ่/แอร์เยอะ/ใช้ไฟเกิน 10kW (สายเข้า 4 เส้น) ส่งผลต่อขนาด inverter ที่จะติดได้">?</span>
+                                </label>
                                 <div class="d-flex gap-3">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="roi_phase" id="roi_phase1" value="1" checked onchange="roiScheduleAutoSave()">
@@ -504,25 +508,33 @@
                                 <label class="form-label fw-bold">ทราบสัดส่วนอย่างไร?</label>
                                 <div class="row g-2">
                                     <div class="col-6 col-md-3">
-                                        <div class="roi-option-card text-center" data-mode="percent" onclick="roiSelectSplitMode('percent')">
+                                        <div class="roi-option-card text-center" data-mode="percent" onclick="roiSelectSplitMode('percent')"
+                                             data-bs-toggle="tooltip" data-bs-placement="top"
+                                             title="ลูกค้าประมาณได้ว่าใช้ไฟกลางวันกี่ % ของบิลทั้งเดือน — ใช้สไลเดอร์ปรับ เช่น บ้านที่อยู่ทั้งวัน ~50-60% / WFH ~40% / ออกบ้านทั้งวัน ~20%">
                                             <div style="font-size:1.5rem;">%</div>
                                             <small>ทราบ % กลางวัน</small>
                                         </div>
                                     </div>
                                     <div class="col-6 col-md-3">
-                                        <div class="roi-option-card text-center" data-mode="kwh" onclick="roiSelectSplitMode('kwh')">
+                                        <div class="roi-option-card text-center" data-mode="kwh" onclick="roiSelectSplitMode('kwh')"
+                                             data-bs-toggle="tooltip" data-bs-placement="top"
+                                             title="ลูกค้ารู้หน่วย kWh ที่ใช้กลางวันและกลางคืนแยกกัน (เช่น มี smart meter หรือเคยจดมิเตอร์เปรียบเทียบ) — แม่นยำสุดถ้ามีข้อมูล">
                                             <div style="font-size:1.5rem;">kWh</div>
                                             <small>ทราบ kWh</small>
                                         </div>
                                     </div>
                                     <div class="col-6 col-md-3">
-                                        <div class="roi-option-card text-center" data-mode="appliance" onclick="roiSelectSplitMode('appliance')">
+                                        <div class="roi-option-card text-center" data-mode="appliance" onclick="roiSelectSplitMode('appliance')"
+                                             data-bs-toggle="tooltip" data-bs-placement="top"
+                                             title="ลูกค้าไม่รู้ % แต่บอกได้ว่ามีเครื่องใช้ไฟอะไรบ้าง ใช้เวลาเท่าไหร่/วัน — ระบบ inventory แล้วคำนวณสัดส่วนให้ เหมาะกับลูกค้าที่ไม่เคยคิดเรื่องนี้มาก่อน">
                                             <div style="font-size:1.5rem;">&#128268;</div>
                                             <small>เลือกเครื่องใช้ไฟ</small>
                                         </div>
                                     </div>
                                     <div class="col-6 col-md-3">
-                                        <div class="roi-option-card text-center selected" data-mode="default" onclick="roiSelectSplitMode('default')">
+                                        <div class="roi-option-card text-center selected" data-mode="default" onclick="roiSelectSplitMode('default')"
+                                             data-bs-toggle="tooltip" data-bs-placement="top"
+                                             title="ไม่มีข้อมูลเลย ใช้ค่ามาตรฐาน 40% กลางวัน / 60% กลางคืน — เร็วและประมาณการได้ค่อนข้างใกล้เคียงจริงสำหรับบ้านพักทั่วไป">
                                             <div style="font-size:1.5rem;">&#9889;</div>
                                             <small>ใช้ค่า default 40%</small>
                                         </div>
@@ -593,13 +605,15 @@
                         <h5 class="card-title-custom">ตัวเลือกเพิ่มเติม</h5>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="FIT (Feed-in Tariff) = ขายไฟส่วนเกินคืนให้การไฟฟ้าตามราคาที่ประกาศ — เปิดถ้าลูกค้าสมัครโครงการ Solar Rooftop ของ กฟผ./กฟภ. แล้ว ระบบจะคำนวณรายรับเพิ่มจากการขายไฟ (ค่า FIT ใน roi_assumption sheet)">
                                     <input class="form-check-input" type="checkbox" id="roi_includeFit" onchange="roiScheduleAutoSave()">
                                     <label class="form-check-label fw-bold" for="roi_includeFit">รวม FIT (ซื้อไฟคืน)</label>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="เปิดถ้าลูกค้ามีแผงโซลาร์ติดอยู่แล้วและต้องการเพิ่ม/เปลี่ยน — ระบบจะคำนวณ ROI เป็นส่วนต่าง ไม่นับยอดที่ติดอยู่เดิม ปิดถ้าเป็นการติดครั้งแรก">
                                     <input class="form-check-input" type="checkbox" id="roi_existingSolar" onchange="roiScheduleAutoSave()">
                                     <label class="form-check-label fw-bold" for="roi_existingSolar">มีแผงโซลาร์เซลล์อยู่แล้ว</label>
                                 </div>
@@ -689,44 +703,54 @@
                         <h5 class="card-title-custom">แนะนำแผนไฟเนาซ์</h5>
                         <div class="row g-3 mb-3">
                             <div class="col-md-3">
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="เปิดเมื่อลูกค้าอยากเอาดอกเบี้ยไปลดหย่อนภาษีปลายปี — สินเชื่อบ้าน (HE) เท่านั้นที่ลดหย่อนได้ ระบบจะดันแผน HE ขึ้นมาก่อน ไม่ใช่ตัวกรองเข้ม-ตัดทิ้ง">
                                     <input class="form-check-input" type="checkbox" id="roi_wantTaxDeduct" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_wantTaxDeduct">ต้องการลดหย่อนภาษี</label>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="เปิดถ้าลูกค้ามีบ้านที่ปลอดจำนอง (หรือยังผ่อนอยู่แต่ติดได้) เพื่อใช้เป็นหลักทรัพย์ค้ำสินเชื่อบ้าน — จะปลดล็อกแผน Home Equity ของ BBL/KTB/KBANK/GHB ดอกเบี้ยต่ำกว่า personal loan มาก">
                                     <input class="form-check-input" type="checkbox" id="roi_hasCollateral" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_hasCollateral">มีบ้านค้ำประกัน</label>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="form-check form-switch">
+                                <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="เปิดถ้าลูกค้ามีบัตรเครดิตของธนาคารที่เสนอผ่อน (KTC/KBANK/KRUNGSRI) — จะปลดล็อกแผนผ่อนผ่านบัตร 0% หรือดอกเบี้ยต่ำมาก แต่วงเงินจำกัดที่วงเงินบัตร">
                                     <input class="form-check-input" type="checkbox" id="roi_hasCreditCard" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_hasCreditCard">มีบัตรเครดิตของแบงค์</label>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-bold">เงินดาวน์ (%)</label>
+                                <label class="form-label fw-bold" data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="% เงินที่จ่ายก้อนแรก ส่วนที่เหลือคือยอดผ่อน — ดาวน์เยอะ = ผ่อนน้อย/ดอกน้อย แต่ละแบงค์ต้องการดาวน์ไม่เท่ากัน: ICBC 10-25% / HE 0% / บัตร 0%">
+                                    เงินดาวน์ (%)
+                                </label>
                                 <input type="number" id="roi_downPercent" class="form-control" value="0" min="0" max="100" step="5" oninput="roiCalcFinancing()">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">เรียงตาม</label>
                             <div class="d-flex flex-wrap gap-2">
-                                <div class="form-check form-check-inline">
+                                <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="ค่าผ่อน/เดือน − เงินประหยัด/เดือน = เงินที่ลูกค้าควักจริงๆ ต่อเดือน ค่ายิ่งต่ำ (หรือติดลบ) ยิ่งดี — เหมาะสำหรับลูกค้าที่ดูเงินสดไหลออกเป็นหลัก">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankNet" value="net" checked onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_rankNet">Net Monthly (ต่ำสุด)</label>
                                 </div>
-                                <div class="form-check form-check-inline">
+                                <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="อัตราดอกเบี้ยถัวเฉลี่ยตลอดอายุสัญญาต่ำสุด — เหมาะถ้าลูกค้าอยากได้ดอกเบี้ยถูกที่สุดโดยไม่สนใจค่าผ่อน/เดือน หรือกะจะปิดสัญญาก่อนกำหนด">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankRate" value="rate" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_rankRate">ดอกเบี้ยต่ำสุด</label>
                                 </div>
-                                <div class="form-check form-check-inline">
+                                <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="ค่าผ่อนเดือนแรกต่ำสุด (ก่อนหักเงินประหยัด) — เหมาะกับลูกค้าที่ดู cashflow ออกตอนเริ่ม แม้ดอกเบี้ยรวมจะสูงกว่าก็ตาม">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankMonthly" value="monthly" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_rankMonthly">ผ่อน/เดือนต่ำสุด</label>
                                 </div>
-                                <div class="form-check form-check-inline">
+                                <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="ผลรวมดอกเบี้ยตลอดสัญญาต่ำสุด — เหมาะกับลูกค้าที่ดูภาพรวมว่าจ่ายดอกเบี้ยทั้งหมดเท่าไหร่ ไม่สนใจว่าผ่อนเดือนละกี่บาท">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankInterest" value="interest" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_rankInterest">ดอกเบี้ยรวมน้อยสุด</label>
                                 </div>
