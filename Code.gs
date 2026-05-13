@@ -669,8 +669,11 @@ function loadRoiSession(sessionId) {
   } catch (e) { return null; }
 }
 
-function _findRowByPk(sheet, pkCol, pkValue) {
-  var data = sheet.getDataRange().getValues();
+function _findRowByPk(sheet, pkCol, pkValue, preReadData) {
+  // preReadData lets callers pass a pre-fetched sheet snapshot to avoid
+  // re-reading the entire range; existing call sites that omit it still
+  // work because we fall back to a fresh read.
+  var data = preReadData || sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (data[i][pkCol] && data[i][pkCol].toString().trim() === pkValue.toString().trim()) {
       return i + 1; // 1-based row index
@@ -769,9 +772,7 @@ function upsertRoiSession(session) {
       sheet.appendRow(rowData);
     }
 
-    // invalidate bootstrap cache since session data changed
-    try { CacheService.getScriptCache().remove('roi_bootstrap_v1'); } catch (e) {}
-
+    _invalidateBootstrapCache();
     return { status: 'success', session_id: sessionId };
   } catch (e) {
     return { status: 'error', message: e.message };
@@ -932,35 +933,91 @@ function _calcProgressiveBill(kWh, tiers, serviceCharge) {
 
 // ==================== Admin CRUD — Generic Engine ====================
 
+// Single source of truth for invalidating bootstrap cache after any
+// write that touches the ROI seed sheets. Both legacy and current
+// cache keys are cleared so a stale build can't outlive the fix.
+function _invalidateBootstrapCache() {
+  try {
+    var cache = CacheService.getScriptCache();
+    cache.remove('roi_bootstrap_v1');
+    cache.remove('roi_bootstrap_v2');
+  } catch (e) { /* non-critical */ }
+}
+
+// Wrap a server-side operation so callers never see a raw exception.
+// fn is expected to return its own success-shaped object (e.g.
+// { status: 'success', ... }); on throw we log and return a uniform
+// error envelope.
+function _safeReturn(fn) {
+  try {
+    return fn();
+  } catch (e) {
+    Logger.log('_safeReturn caught: ' + e.message + (e.stack ? '\n' + e.stack : ''));
+    return { status: 'error', message: e.message || String(e) };
+  }
+}
+
+// Gate admin endpoints. Reads comma-separated allowlist from the
+// Config sheet (key = "admin_emails"). If no allowlist exists at all,
+// log a loud warning and let the call proceed — this matches the
+// current dev-mode reality and avoids a hard lockout on first deploy.
+function _requireAdmin() {
+  var email = '';
+  try { email = Session.getActiveUser().getEmail(); } catch (e) { /* anonymous session */ }
+  var raw = getConfig('admin_emails');
+  if (!raw) {
+    Logger.log('WARNING: admin_emails not set in Config sheet — admin endpoints are open.');
+    return;
+  }
+  var admins = raw.toString().split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+  if (admins.indexOf((email || '').toLowerCase()) === -1) {
+    throw new Error('Unauthorized: ' + (email || 'anonymous') + ' is not in admin_emails');
+  }
+}
+
 function adminGetAllRows(sheetName) {
-  return _sheetToObjects(sheetName);
+  return _safeReturn(function () {
+    _requireAdmin();
+    return _sheetToObjects(sheetName);
+  });
+}
+
+// Batched fetch: replaces two sequential adminGetAllRows calls the
+// frontend used to make every time the Admin tab reloaded. One round
+// trip, one auth check.
+function adminGetAllPlansAndTiers() {
+  return _safeReturn(function () {
+    _requireAdmin();
+    return {
+      status: 'success',
+      plans: _sheetToObjects(ROI_SHEETS.plans),
+      tiers: _sheetToObjects(ROI_SHEETS.tiers)
+    };
+  });
 }
 
 function adminUpsertRow(sheetName, pkColName, rowData) {
-  try {
+  return _safeReturn(function () {
+    _requireAdmin();
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) return { status: 'error', message: 'Sheet ' + sheetName + ' not found' };
 
     var data = sheet.getDataRange().getValues();
     if (data.length < 1) return { status: 'error', message: 'Sheet has no headers' };
-    var headers = data[0].map(function(h) { return h.toString().trim(); });
+    var headers = data[0].map(function (h) { return h.toString().trim(); });
     var pkIdx = headers.indexOf(pkColName);
     if (pkIdx < 0) return { status: 'error', message: 'PK column ' + pkColName + ' not found' };
 
     var pkValue = rowData[pkColName];
-    var rowIndex = -1;
-    if (pkValue) {
-      rowIndex = _findRowByPk(sheet, pkIdx, pkValue);
-    }
+    // Reuse the already-fetched `data` instead of re-reading the sheet.
+    var rowIndex = pkValue ? _findRowByPk(sheet, pkIdx, pkValue, data) : -1;
 
-    // Build values array in header order
     var values = [];
     for (var c = 0; c < headers.length; c++) {
       var v = rowData[headers[c]];
       if (v === undefined || v === null) v = '';
-      // Convert ISO date strings back to Date
       if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        v = new Date(v);
+        v = new Date(v + 'T00:00:00Z');
       }
       values.push(v);
     }
@@ -971,67 +1028,52 @@ function adminUpsertRow(sheetName, pkColName, rowData) {
       sheet.appendRow(values);
     }
 
-    // Invalidate bootstrap cache
-    try {
-      CacheService.getScriptCache().remove('roi_bootstrap_v1');
-      CacheService.getScriptCache().remove('roi_bootstrap_v2');
-    } catch (e) {}
-
+    _invalidateBootstrapCache();
     return { status: 'success', pk: pkValue || '' };
-  } catch (e) {
-    return { status: 'error', message: e.message };
-  }
+  });
 }
 
 function adminSoftDeleteRow(sheetName, pkColName, pkValue) {
-  try {
+  return _safeReturn(function () {
+    _requireAdmin();
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) return { status: 'error', message: 'Sheet not found' };
 
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); });
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 1) return { status: 'error', message: 'Sheet has no headers' };
+    var headers = data[0].map(function (h) { return h.toString().trim(); });
     var pkIdx = headers.indexOf(pkColName);
     var statusIdx = headers.indexOf('status');
     if (pkIdx < 0 || statusIdx < 0) return { status: 'error', message: 'Column not found' };
 
-    var rowIndex = _findRowByPk(sheet, pkIdx, pkValue);
+    var rowIndex = _findRowByPk(sheet, pkIdx, pkValue, data);
     if (rowIndex < 0) return { status: 'error', message: 'Row not found' };
 
     sheet.getRange(rowIndex, statusIdx + 1).setValue('inactive');
-
-    try {
-      CacheService.getScriptCache().remove('roi_bootstrap_v1');
-      CacheService.getScriptCache().remove('roi_bootstrap_v2');
-    } catch (e) {}
-
+    _invalidateBootstrapCache();
     return { status: 'success' };
-  } catch (e) {
-    return { status: 'error', message: e.message };
-  }
+  });
 }
 
 function adminHardDeleteRow(sheetName, pkColName, pkValue) {
-  try {
+  return _safeReturn(function () {
+    _requireAdmin();
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) return { status: 'error', message: 'Sheet not found' };
 
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); });
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 1) return { status: 'error', message: 'Sheet has no headers' };
+    var headers = data[0].map(function (h) { return h.toString().trim(); });
     var pkIdx = headers.indexOf(pkColName);
     if (pkIdx < 0) return { status: 'error', message: 'PK column not found' };
 
-    var rowIndex = _findRowByPk(sheet, pkIdx, pkValue);
+    var rowIndex = _findRowByPk(sheet, pkIdx, pkValue, data);
     if (rowIndex < 0) return { status: 'error', message: 'Row not found' };
 
     sheet.deleteRow(rowIndex);
-
-    try {
-      CacheService.getScriptCache().remove('roi_bootstrap_v1');
-      CacheService.getScriptCache().remove('roi_bootstrap_v2');
-    } catch (e) {}
-
+    _invalidateBootstrapCache();
     return { status: 'success' };
-  } catch (e) {
-    return { status: 'error', message: e.message };
-  }
+  });
 }
 
 function adminGeneratePlanId() {
@@ -1056,13 +1098,8 @@ function adminGenerateTierId(planId) {
 }
 
 function adminInvalidateCache() {
-  try {
-    CacheService.getScriptCache().remove('roi_bootstrap_v1');
-    CacheService.getScriptCache().remove('roi_bootstrap_v2');
-    return { status: 'ok' };
-  } catch (e) {
-    return { status: 'error', message: e.message };
-  }
+  _invalidateBootstrapCache();
+  return { status: 'success' };
 }
 
 // ==================== ROI Helper — Diagnostics ====================
@@ -1144,13 +1181,7 @@ function diagBootstrap() {
 
 // Clear the ROI bootstrap cache (run from GAS editor after editing seed sheets).
 function clearRoiCache() {
-  try {
-    var c = CacheService.getScriptCache();
-    c.remove('roi_bootstrap_v1');
-    c.remove('roi_bootstrap_v2');
-    Logger.log('ROI bootstrap cache cleared.');
-    return { status: 'ok', message: 'cache cleared' };
-  } catch (e) {
-    return { status: 'error', message: e.message };
-  }
+  _invalidateBootstrapCache();
+  Logger.log('ROI bootstrap cache cleared.');
+  return { status: 'ok', message: 'cache cleared' };
 }

@@ -3063,35 +3063,25 @@
 
         function adminLoadData() {
             showLoading('กำลังโหลดข้อมูล Admin...');
-            var plansLoaded = false, tiersLoaded = false;
-            function checkDone() {
-                if (plansLoaded && tiersLoaded) {
+            // Single batched call: backend returns both plans and tiers in
+            // one envelope. Cuts the round-trip count from 2 → 1 per reload
+            // (and from ~8 → 4 across a typical save+reload cycle).
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    hideLoading();
+                    if (!res || res.status === 'error') {
+                        alert('ไม่สามารถโหลดข้อมูล Admin: ' + (res ? res.message : 'unknown'));
+                        return;
+                    }
+                    adminPlans = res.plans || [];
+                    adminAllTiers = res.tiers || [];
                     adminRenderPlansTable();
+                })
+                .withFailureHandler(function (err) {
                     hideLoading();
-                }
-            }
-            google.script.run
-                .withSuccessHandler(function(data) {
-                    adminPlans = data || [];
-                    plansLoaded = true;
-                    checkDone();
+                    alert('ไม่สามารถโหลดข้อมูล Admin: ' + err.message);
                 })
-                .withFailureHandler(function(err) {
-                    hideLoading();
-                    alert('ไม่สามารถโหลด plans: ' + err.message);
-                })
-                .adminGetAllRows('financing_plan');
-            google.script.run
-                .withSuccessHandler(function(data) {
-                    adminAllTiers = data || [];
-                    tiersLoaded = true;
-                    checkDone();
-                })
-                .withFailureHandler(function(err) {
-                    hideLoading();
-                    alert('ไม่สามารถโหลด tiers: ' + err.message);
-                })
-                .adminGetAllRows('financing_rate_tier');
+                .adminGetAllPlansAndTiers();
         }
 
         function adminRenderPlansTable() {
