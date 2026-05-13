@@ -2744,8 +2744,11 @@
                     }
                 }
 
+                var bankLabel = p.plan.bank_label_th || p.plan.bank_name || p.plan.bank || '-';
+                var productLabel = p.plan.product_name_th || p.plan.plan_name || p.plan.name || '-';
+                var termValue = p.term || p.termMonths || 0;
                 card.innerHTML = '<div class="d-flex justify-content-between align-items-start">' +
-                    '<div><strong>' + (p.plan.bank_name || p.plan.bank || '-') + ' - ' + (p.plan.plan_name || p.plan.name || '-') + '</strong> ' + tags + '</div>' +
+                    '<div><strong>' + _esc(bankLabel) + ' - ' + _esc(productLabel) + '</strong> ' + tags + '</div>' +
                     '<div class="text-end"><span class="roi-hero-net" style="font-size:1.5rem;">' + Math.round(p.monthlyNet || 0).toLocaleString() + '</span><br><small class="text-muted">NET/เดือน (บาท)</small></div>' +
                     '</div>' +
                     '<hr class="my-2">' +
@@ -2753,7 +2756,7 @@
                     '<div class="col"><small class="text-muted">ผ่อน/เดือน</small><br><strong>' + Math.round(p.firstInstallment || p.monthlyPayment || 0).toLocaleString() + '</strong></div>' +
                     '<div class="col"><small class="text-muted">ประหยัด/เดือน</small><br><strong class="text-success">' + Math.round(p.monthlySaving || 0).toLocaleString() + '</strong></div>' +
                     '<div class="col"><small class="text-muted">ดอกเบี้ยรวม</small><br><strong>' + Math.round(p.totalInterest || 0).toLocaleString() + '</strong></div>' +
-                    '<div class="col"><small class="text-muted">ระยะเวลา</small><br><strong>' + (p.termMonths || 0) + ' เดือน</strong></div>' +
+                    '<div class="col"><small class="text-muted">ระยะเวลา</small><br><strong>' + termValue + ' เดือน</strong></div>' +
                     '</div>';
                 container.appendChild(card);
             }
@@ -2893,7 +2896,7 @@
             if (roiSelectedPlanIdx >= 0 && roiFinancingResults[roiSelectedPlanIdx]) {
                 var selPlan = roiFinancingResults[roiSelectedPlanIdx];
                 obj.selected_plan_id_fk = selPlan.plan ? (selPlan.plan.plan_id || selPlan.plan.id || '') : '';
-                obj.selected_term_months = selPlan.termMonths || 0;
+                obj.selected_term_months = selPlan.term || selPlan.termMonths || 0;
                 obj.monthly_installment = Math.round(selPlan.firstInstallment || selPlan.monthlyPayment || 0);
                 obj.monthly_saving = Math.round(selPlan.monthlySaving || 0);
                 obj.monthly_net = Math.round(selPlan.monthlyNet || 0);
@@ -2957,7 +2960,7 @@
             document.getElementById('roi_presPlan').textContent = plan.bank_label_th || plan.bank_code || '-';
             var planDetail = plan.product_name_th || '';
             planDetail += ' | ผ่อน ' + (planResult.term || 0) + ' เดือน';
-            planDetail += ' | ดาวน์ ' + Math.round((planResult.downPct || 0) * 100) + '%';
+            planDetail += ' | ดาวน์ ' + Math.round(planResult.downPct || 0) + '%';
             document.getElementById('roi_presPlanDetail').textContent = planDetail;
 
             // Draw chart
