@@ -217,6 +217,16 @@
         .roi-badge-fast { background: #fff3e0; color: #e65100; }
         .roi-badge-fit { background: #e3f2fd; color: #1565c0; }
         #roi-helper { font-family: 'Krub', sans-serif; }
+
+        /* Admin Tab */
+        .admin-plan-row { cursor: pointer; transition: background 0.2s; }
+        .admin-plan-row:hover { background-color: var(--ocean-bg) !important; }
+        .admin-detail-row td { padding: 0 !important; }
+        .admin-detail-inner { padding: 10px 15px 15px; background: #f8fffe; border-left: 4px solid var(--ocean-main); }
+        .admin-tier-row td { font-size: 0.85rem; }
+        .admin-badge-active { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+        .admin-badge-inactive { background: #fbe9e7; color: #bf360c; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+        #admin { font-family: 'Krub', sans-serif; }
     </style>
 </head>
 
@@ -248,6 +258,8 @@
             </li>
             <li class="nav-item" role="presentation"><button class="nav-link" id="quotation-tab" data-bs-toggle="tab"
                     data-bs-target="#quotation" type="button" role="tab">📄 ระบบออกใบเสนอราคา</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="admin-tab" data-bs-toggle="tab"
+                    data-bs-target="#admin" type="button" role="tab">&#9881; Admin</button></li>
         </ul>
 
         <div class="tab-content" id="myTabContent">
@@ -1055,7 +1067,273 @@
                             onclick="resetQuotationForm()">สร้างใบเสนอราคาใหม่</button></div>
                 </div>
             </div>
-        </div>
+
+            <!-- ==================== TAB: Admin ==================== -->
+            <div class="tab-pane fade" id="admin" role="tabpanel">
+                <div class="card p-4 bg-white" style="border-top: 5px solid #607D8B !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title-custom mb-0">จัดการ Financing Plans</h5>
+                        <button class="btn btn-ocean btn-sm" onclick="adminOpenNewPlanModal()">+ เพิ่มแผนใหม่</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="admin_planTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:30px"></th>
+                                    <th>Plan ID</th>
+                                    <th>ธนาคาร</th>
+                                    <th>ชื่อผลิตภัณฑ์</th>
+                                    <th>ประเภท</th>
+                                    <th>งวด (เดือน)</th>
+                                    <th>สถานะ</th>
+                                    <th style="width:120px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin_planBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="admin_emptyMsg" class="text-center text-muted py-4 d-none">กำลังโหลดข้อมูล...</div>
+                </div>
+            </div><!-- /admin tab-pane -->
+
+            <!-- Admin Plan Modal -->
+            <div class="modal fade" id="adminPlanModal" tabindex="-1">
+              <div class="modal-dialog modal-lg modal-fullscreen-md-down">
+                <div class="modal-content">
+                  <div class="modal-header" style="background:var(--ocean-bg)">
+                    <h6 class="modal-title" id="adminPlanModalLabel">เพิ่ม Financing Plan</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row g-2">
+                      <div class="col-12 col-md-4">
+                        <label class="form-label small">Plan ID</label>
+                        <input type="text" id="ap_plan_id" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <label class="form-label small">Bank Code</label>
+                        <input type="text" id="ap_bank_code" class="form-control form-control-sm" placeholder="เช่น ICBC, BBL">
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <label class="form-label small">ชื่อธนาคาร (TH)</label>
+                        <input type="text" id="ap_bank_label_th" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-12 col-md-8">
+                        <label class="form-label small">ชื่อผลิตภัณฑ์ (TH)</label>
+                        <input type="text" id="ap_product_name_th" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label small">Campaign Code</label>
+                        <input type="text" id="ap_campaign_code" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Financing Type</label>
+                        <select id="ap_financing_type" class="form-select form-select-sm">
+                          <option value="">-- เลือก --</option>
+                          <option value="cash">Cash</option>
+                          <option value="personal_loan">Personal Loan</option>
+                          <option value="home_equity">Home Equity</option>
+                          <option value="credit_card_installment">Credit Card Installment</option>
+                        </select>
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Rate Type</label>
+                        <select id="ap_rate_type" class="form-select form-select-sm">
+                          <option value="">-- เลือก --</option>
+                          <option value="flat">Flat</option>
+                          <option value="reducing">Reducing</option>
+                        </select>
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Rate Basis</label>
+                        <select id="ap_rate_basis" class="form-select form-select-sm">
+                          <option value="">-- เลือก --</option>
+                          <option value="fixed">Fixed</option>
+                          <option value="reference">Reference</option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label small">Rate Reference</label>
+                        <input type="text" id="ap_rate_reference" class="form-control form-control-sm" placeholder="เช่น MRR-1.00, MLR+0.55">
+                      </div>
+                      <div class="col-4 col-md-2">
+                        <label class="form-label small">Term Min</label>
+                        <input type="number" id="ap_term_min_months" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-4 col-md-2">
+                        <label class="form-label small">Term Max</label>
+                        <input type="number" id="ap_term_max_months" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-4 col-md-2">
+                        <label class="form-label small">Term Step</label>
+                        <input type="number" id="ap_term_step_months" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small">Price Min</label>
+                        <input type="number" id="ap_price_min" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small">Price Max</label>
+                        <input type="number" id="ap_price_max" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small">Down % Options (คั่นด้วย ,)</label>
+                        <input type="text" id="ap_down_percent_options" class="form-control form-control-sm" placeholder="เช่น 0.10,0.15,0.20">
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small">Processing Fee</label>
+                        <input type="number" id="ap_processing_fee" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small">Monthly Fee</label>
+                        <input type="number" id="ap_monthly_fee" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small d-block">Tax Deduct</label>
+                        <div class="form-check form-check-inline mt-1">
+                          <input type="checkbox" id="ap_tax_deduction_eligible" class="form-check-input">
+                          <label class="form-check-label small" for="ap_tax_deduction_eligible">ลดหย่อนได้</label>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small d-block">Collateral</label>
+                        <div class="form-check form-check-inline mt-1">
+                          <input type="checkbox" id="ap_requires_collateral" class="form-check-input">
+                          <label class="form-check-label small" for="ap_requires_collateral">ต้องใช้หลักทรัพย์</label>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small d-block">Fire Insurance</label>
+                        <div class="form-check form-check-inline mt-1">
+                          <input type="checkbox" id="ap_requires_fire_insurance" class="form-check-input">
+                          <label class="form-check-label small" for="ap_requires_fire_insurance">ประกันอัคคีภัย</label>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <label class="form-label small d-block">Credit Card</label>
+                        <div class="form-check form-check-inline mt-1">
+                          <input type="checkbox" id="ap_requires_credit_card_of_bank" class="form-check-input">
+                          <label class="form-check-label small" for="ap_requires_credit_card_of_bank">ต้องมีบัตร</label>
+                        </div>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small">Recommend Tags</label>
+                        <input type="text" id="ap_recommend_tags" class="form-control form-control-sm" placeholder="คั่นด้วย ,">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small">คำแนะนำ (TH)</label>
+                        <input type="text" id="ap_guide_question_hint_th" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small">หมายเหตุ (TH)</label>
+                        <textarea id="ap_note_th" class="form-control form-control-sm" rows="2"></textarea>
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Status</label>
+                        <select id="ap_status" class="form-select form-select-sm">
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="draft">Draft</option>
+                        </select>
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Effective From</label>
+                        <input type="date" id="ap_effective_from" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Effective To</label>
+                        <input type="date" id="ap_effective_to" class="form-control form-control-sm">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-ocean btn-sm" onclick="adminSavePlan()">บันทึก</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Tier Modal -->
+            <div class="modal fade" id="adminTierModal" tabindex="-1">
+              <div class="modal-dialog modal-fullscreen-md-down">
+                <div class="modal-content">
+                  <div class="modal-header" style="background:var(--ocean-bg)">
+                    <h6 class="modal-title" id="adminTierModalLabel">เพิ่ม Rate Tier</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row g-2">
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small">Tier ID</label>
+                        <input type="text" id="at_tier_id" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small">Plan ID</label>
+                        <input type="text" id="at_plan_id" class="form-control form-control-sm" readonly>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">Term Months (* = all)</label>
+                        <input type="text" id="at_applies_to_term_months" class="form-control form-control-sm" placeholder="48 หรือ *">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">Down % (* = all)</label>
+                        <input type="text" id="at_applies_to_down_percent" class="form-control form-control-sm" placeholder="0.10 หรือ *">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">From Month</label>
+                        <input type="number" id="at_from_month" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">To Month</label>
+                        <input type="number" id="at_to_month" class="form-control form-control-sm" min="0">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Rate Override</label>
+                        <select id="at_rate_type_override" class="form-select form-select-sm">
+                          <option value="">(ใช้ค่า plan)</option>
+                          <option value="flat">Flat</option>
+                          <option value="reducing">Reducing</option>
+                        </select>
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Rate Value</label>
+                        <input type="number" id="at_rate_value" class="form-control form-control-sm" step="0.0001" placeholder="0.0739">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Ref Offset</label>
+                        <input type="number" id="at_reference_offset" class="form-control form-control-sm" step="0.01" placeholder="-0.01">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">Sequence</label>
+                        <input type="number" id="at_sequence" class="form-control form-control-sm" min="1" value="1">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small">หมายเหตุ (TH)</label>
+                        <input type="text" id="at_note_th" class="form-control form-control-sm">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-ocean btn-sm" onclick="adminSaveTier()">บันทึก</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Confirm Modal -->
+            <div class="modal fade" id="adminConfirmModal" tabindex="-1">
+              <div class="modal-dialog modal-sm modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-body text-center py-4">
+                    <p id="adminConfirmMsg" class="mb-3">ยืนยัน?</p>
+                    <button type="button" class="btn btn-danger btn-sm me-2" id="adminConfirmAction">ยืนยัน</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                  </div>
+                </div>
+              </div>
+            </div>
     </div>
 
     <script>
@@ -2770,6 +3048,383 @@
                     '<td class="text-end">' + Math.round(row.balance || 0).toLocaleString() + '</td>';
                 tbody.appendChild(tr);
             }
+        }
+
+        // ==================== Admin Tab ====================
+        var adminPlans = [];
+        var adminAllTiers = [];
+        var adminExpandedPlanId = null;
+        var adminEditPlanId = null;
+        var adminEditTierId = null;
+
+        document.getElementById('admin-tab').addEventListener('shown.bs.tab', function() {
+            if (adminPlans.length === 0) adminLoadData();
+        });
+
+        function adminLoadData() {
+            showLoading('กำลังโหลดข้อมูล Admin...');
+            var plansLoaded = false, tiersLoaded = false;
+            function checkDone() {
+                if (plansLoaded && tiersLoaded) {
+                    adminRenderPlansTable();
+                    hideLoading();
+                }
+            }
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    adminPlans = data || [];
+                    plansLoaded = true;
+                    checkDone();
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    alert('ไม่สามารถโหลด plans: ' + err.message);
+                })
+                .adminGetAllRows('financing_plan');
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    adminAllTiers = data || [];
+                    tiersLoaded = true;
+                    checkDone();
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    alert('ไม่สามารถโหลด tiers: ' + err.message);
+                })
+                .adminGetAllRows('financing_rate_tier');
+        }
+
+        function adminRenderPlansTable() {
+            var tbody = document.getElementById('admin_planBody');
+            var emptyMsg = document.getElementById('admin_emptyMsg');
+            tbody.innerHTML = '';
+            if (adminPlans.length === 0) {
+                emptyMsg.classList.remove('d-none');
+                emptyMsg.textContent = 'ไม่มีข้อมูล plan';
+                return;
+            }
+            emptyMsg.classList.add('d-none');
+            for (var i = 0; i < adminPlans.length; i++) {
+                var p = adminPlans[i];
+                var isActive = (p.status === 'active');
+                var statusBadge = isActive
+                    ? '<span class="admin-badge-active">active</span>'
+                    : '<span class="admin-badge-inactive">' + (p.status || 'draft') + '</span>';
+                var expanded = (adminExpandedPlanId === p.plan_id);
+                var chevron = expanded ? '&#9660;' : '&#9654;';
+
+                // Plan row
+                var tr = document.createElement('tr');
+                tr.className = 'admin-plan-row';
+                tr.setAttribute('data-plan-id', p.plan_id);
+                tr.innerHTML =
+                    '<td class="text-center" style="font-size:0.7rem;color:#999">' + chevron + '</td>' +
+                    '<td><strong>' + (p.plan_id || '') + '</strong></td>' +
+                    '<td>' + (p.bank_label_th || p.bank_code || '') + '</td>' +
+                    '<td>' + (p.product_name_th || '') + '</td>' +
+                    '<td><span class="small">' + (p.financing_type || '') + ' / ' + (p.rate_type || '') + '</span></td>' +
+                    '<td>' + (p.term_min_months || 0) + '-' + (p.term_max_months || 0) + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' +
+                        '<button class="btn btn-sm btn-outline-ocean py-0 px-2 me-1" onclick="adminEditPlan(\'' + (p.plan_id || '') + '\'); event.stopPropagation();">แก้ไข</button>' +
+                        (isActive ? '<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="adminConfirmDeactivate(\'' + (p.plan_id || '') + '\'); event.stopPropagation();">ปิด</button>' : '') +
+                    '</td>';
+                (function(pid) {
+                    tr.addEventListener('click', function(e) {
+                        if (e.target.tagName === 'BUTTON') return;
+                        adminTogglePlan(pid);
+                    });
+                })(p.plan_id);
+                tbody.appendChild(tr);
+
+                // Detail row (tiers for this plan)
+                var detailTr = document.createElement('tr');
+                detailTr.className = 'admin-detail-row';
+                detailTr.id = 'admin-detail-' + (p.plan_id || '').replace(/[^a-zA-Z0-9]/g, '_');
+                if (!expanded) detailTr.style.display = 'none';
+                var tiers = adminAllTiers.filter(function(t) { return t.plan_id === p.plan_id; });
+                var tiersHtml = '';
+                if (tiers.length === 0) {
+                    tiersHtml = '<p class="text-muted small mb-2">ไม่มี tier</p>';
+                } else {
+                    tiersHtml = '<table class="table table-sm table-bordered mb-2 admin-tier-table">' +
+                        '<thead class="table-light"><tr>' +
+                        '<th>Tier ID</th><th>Term</th><th>Down%</th><th>Month</th><th>Rate</th><th>Seq</th><th>Note</th><th></th>' +
+                        '</tr></thead><tbody>';
+                    for (var j = 0; j < tiers.length; j++) {
+                        var t = tiers[j];
+                        var rateDisplay = t.rate_value ? (Number(t.rate_value) * 100).toFixed(2) + '%'
+                            : (t.reference_offset ? 'ref ' + t.reference_offset : '-');
+                        tiersHtml += '<tr class="admin-tier-row">' +
+                            '<td>' + (t.tier_id || '') + '</td>' +
+                            '<td>' + (t.applies_to_term_months || '*') + '</td>' +
+                            '<td>' + (t.applies_to_down_percent || '*') + '</td>' +
+                            '<td>' + (t.from_month || 0) + '-' + (t.to_month || 0) + '</td>' +
+                            '<td>' + rateDisplay + '</td>' +
+                            '<td>' + (t.sequence || '') + '</td>' +
+                            '<td class="small">' + (t.note_th || '') + '</td>' +
+                            '<td nowrap>' +
+                                '<button class="btn btn-sm btn-outline-ocean py-0 px-2 me-1" onclick="adminEditTier(\'' + (t.tier_id || '') + '\')">แก้ไข</button>' +
+                                '<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="adminConfirmDeleteTier(\'' + (t.tier_id || '') + '\')">ลบ</button>' +
+                            '</td></tr>';
+                    }
+                    tiersHtml += '</tbody></table>';
+                }
+                tiersHtml += '<button class="btn btn-sm btn-ocean" onclick="adminOpenNewTierModal(\'' + (p.plan_id || '') + '\')">+ เพิ่ม Tier</button>';
+
+                var td = document.createElement('td');
+                td.colSpan = 8;
+                td.innerHTML = '<div class="admin-detail-inner"><strong class="small text-muted">Rate Tiers:</strong>' + tiersHtml + '</div>';
+                detailTr.appendChild(td);
+                tbody.appendChild(detailTr);
+            }
+        }
+
+        function adminTogglePlan(planId) {
+            if (adminExpandedPlanId === planId) {
+                adminExpandedPlanId = null;
+            } else {
+                adminExpandedPlanId = planId;
+            }
+            adminRenderPlansTable();
+        }
+
+        // --- Plan Modal ---
+        function adminOpenNewPlanModal() {
+            adminEditPlanId = null;
+            document.getElementById('adminPlanModalLabel').textContent = 'เพิ่ม Financing Plan ใหม่';
+            adminClearPlanForm();
+            google.script.run
+                .withSuccessHandler(function(id) {
+                    document.getElementById('ap_plan_id').value = id || '';
+                })
+                .adminGeneratePlanId();
+            new bootstrap.Modal(document.getElementById('adminPlanModal')).show();
+        }
+
+        function adminEditPlan(planId) {
+            var plan = null;
+            for (var i = 0; i < adminPlans.length; i++) {
+                if (adminPlans[i].plan_id === planId) { plan = adminPlans[i]; break; }
+            }
+            if (!plan) return;
+            adminEditPlanId = planId;
+            document.getElementById('adminPlanModalLabel').textContent = 'แก้ไข Financing Plan';
+            adminFillPlanForm(plan);
+            new bootstrap.Modal(document.getElementById('adminPlanModal')).show();
+        }
+
+        function adminSavePlan() {
+            var obj = adminReadPlanForm();
+            if (!obj.plan_id) { alert('กรุณาระบุ Plan ID'); return; }
+            if (!obj.bank_code) { alert('กรุณาระบุ Bank Code'); return; }
+            if (!obj.financing_type) { alert('กรุณาระบุ Financing Type'); return; }
+            showLoading('กำลังบันทึก...');
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if (res.status === 'success') {
+                        bootstrap.Modal.getInstance(document.getElementById('adminPlanModal')).hide();
+                        roiBootstrap = null;
+                        adminLoadData();
+                    } else {
+                        alert('ผิดพลาด: ' + (res.message || ''));
+                    }
+                })
+                .withFailureHandler(function(err) { hideLoading(); alert('ผิดพลาด: ' + err.message); })
+                .adminUpsertRow('financing_plan', 'plan_id', obj);
+        }
+
+        function adminConfirmDeactivate(planId) {
+            document.getElementById('adminConfirmMsg').textContent = 'ต้องการปิดใช้งาน plan "' + planId + '"? (status = inactive)';
+            document.getElementById('adminConfirmAction').onclick = function() {
+                bootstrap.Modal.getInstance(document.getElementById('adminConfirmModal')).hide();
+                adminDeactivatePlan(planId);
+            };
+            new bootstrap.Modal(document.getElementById('adminConfirmModal')).show();
+        }
+
+        function adminDeactivatePlan(planId) {
+            showLoading('กำลังปิดใช้งาน...');
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if (res.status === 'success') {
+                        roiBootstrap = null;
+                        adminLoadData();
+                    } else {
+                        alert('ผิดพลาด: ' + (res.message || ''));
+                    }
+                })
+                .withFailureHandler(function(err) { hideLoading(); alert('ผิดพลาด: ' + err.message); })
+                .adminSoftDeleteRow('financing_plan', 'plan_id', planId);
+        }
+
+        // --- Tier Modal ---
+        function adminOpenNewTierModal(planId) {
+            if (!planId) { alert('กรุณาเลือก plan ก่อน'); return; }
+            adminEditTierId = null;
+            document.getElementById('adminTierModalLabel').textContent = 'เพิ่ม Rate Tier ใหม่';
+            adminClearTierForm();
+            document.getElementById('at_plan_id').value = planId;
+            google.script.run
+                .withSuccessHandler(function(id) {
+                    document.getElementById('at_tier_id').value = id || '';
+                })
+                .adminGenerateTierId(planId);
+            new bootstrap.Modal(document.getElementById('adminTierModal')).show();
+        }
+
+        function adminEditTier(tierId) {
+            var tier = null;
+            for (var i = 0; i < adminAllTiers.length; i++) {
+                if (adminAllTiers[i].tier_id === tierId) { tier = adminAllTiers[i]; break; }
+            }
+            if (!tier) return;
+            adminEditTierId = tierId;
+            document.getElementById('adminTierModalLabel').textContent = 'แก้ไข Rate Tier';
+            adminFillTierForm(tier);
+            new bootstrap.Modal(document.getElementById('adminTierModal')).show();
+        }
+
+        function adminSaveTier() {
+            var obj = adminReadTierForm();
+            if (!obj.tier_id) { alert('กรุณาระบุ Tier ID'); return; }
+            if (!obj.plan_id) { alert('กรุณาระบุ Plan ID'); return; }
+            showLoading('กำลังบันทึก...');
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if (res.status === 'success') {
+                        bootstrap.Modal.getInstance(document.getElementById('adminTierModal')).hide();
+                        roiBootstrap = null;
+                        adminLoadData();
+                    } else {
+                        alert('ผิดพลาด: ' + (res.message || ''));
+                    }
+                })
+                .withFailureHandler(function(err) { hideLoading(); alert('ผิดพลาด: ' + err.message); })
+                .adminUpsertRow('financing_rate_tier', 'tier_id', obj);
+        }
+
+        function adminConfirmDeleteTier(tierId) {
+            document.getElementById('adminConfirmMsg').textContent = 'ต้องการลบ tier "' + tierId + '"? (ลบถาวร)';
+            document.getElementById('adminConfirmAction').onclick = function() {
+                bootstrap.Modal.getInstance(document.getElementById('adminConfirmModal')).hide();
+                adminDeleteTier(tierId);
+            };
+            new bootstrap.Modal(document.getElementById('adminConfirmModal')).show();
+        }
+
+        function adminDeleteTier(tierId) {
+            showLoading('กำลังลบ...');
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if (res.status === 'success') {
+                        roiBootstrap = null;
+                        adminLoadData();
+                    } else {
+                        alert('ผิดพลาด: ' + (res.message || ''));
+                    }
+                })
+                .withFailureHandler(function(err) { hideLoading(); alert('ผิดพลาด: ' + err.message); })
+                .adminHardDeleteRow('financing_rate_tier', 'tier_id', tierId);
+        }
+
+        // --- Form Helpers ---
+        var _adminPlanFields = [
+            'plan_id','bank_code','bank_label_th','product_name_th','campaign_code',
+            'financing_type','rate_type','rate_basis','rate_reference',
+            'term_min_months','term_max_months','term_step_months',
+            'price_min','price_max','down_percent_options',
+            'processing_fee','monthly_fee','recommend_tags','guide_question_hint_th','note_th',
+            'status','effective_from','effective_to'
+        ];
+        var _adminPlanBooleans = ['tax_deduction_eligible','requires_collateral','requires_fire_insurance','requires_credit_card_of_bank'];
+
+        function adminClearPlanForm() {
+            for (var i = 0; i < _adminPlanFields.length; i++) {
+                var el = document.getElementById('ap_' + _adminPlanFields[i]);
+                if (el) el.value = '';
+            }
+            for (var j = 0; j < _adminPlanBooleans.length; j++) {
+                var cb = document.getElementById('ap_' + _adminPlanBooleans[j]);
+                if (cb) cb.checked = false;
+            }
+            document.getElementById('ap_status').value = 'active';
+            document.getElementById('ap_plan_id').readOnly = false;
+        }
+
+        function adminFillPlanForm(plan) {
+            for (var i = 0; i < _adminPlanFields.length; i++) {
+                var el = document.getElementById('ap_' + _adminPlanFields[i]);
+                if (el && plan[_adminPlanFields[i]] !== undefined && plan[_adminPlanFields[i]] !== null) {
+                    var v = plan[_adminPlanFields[i]];
+                    if (v instanceof Date) v = v.toISOString().substring(0, 10);
+                    el.value = v;
+                } else if (el) {
+                    el.value = '';
+                }
+            }
+            for (var j = 0; j < _adminPlanBooleans.length; j++) {
+                var cb = document.getElementById('ap_' + _adminPlanBooleans[j]);
+                if (cb) cb.checked = (plan[_adminPlanBooleans[j]] === true || plan[_adminPlanBooleans[j]] === 'TRUE');
+            }
+            document.getElementById('ap_plan_id').readOnly = true;
+        }
+
+        function adminReadPlanForm() {
+            var obj = {};
+            for (var i = 0; i < _adminPlanFields.length; i++) {
+                var el = document.getElementById('ap_' + _adminPlanFields[i]);
+                obj[_adminPlanFields[i]] = el ? el.value : '';
+            }
+            for (var j = 0; j < _adminPlanBooleans.length; j++) {
+                var cb = document.getElementById('ap_' + _adminPlanBooleans[j]);
+                obj[_adminPlanBooleans[j]] = cb ? (cb.checked ? 'TRUE' : 'FALSE') : 'FALSE';
+            }
+            // numeric conversions
+            var nums = ['term_min_months','term_max_months','term_step_months','price_min','price_max','processing_fee','monthly_fee'];
+            for (var k = 0; k < nums.length; k++) {
+                if (obj[nums[k]]) obj[nums[k]] = parseFloat(obj[nums[k]]) || 0;
+            }
+            return obj;
+        }
+
+        var _adminTierFields = ['tier_id','plan_id','applies_to_term_months','applies_to_down_percent',
+            'from_month','to_month','rate_type_override','rate_value','reference_offset','sequence','note_th'];
+
+        function adminClearTierForm() {
+            for (var i = 0; i < _adminTierFields.length; i++) {
+                var el = document.getElementById('at_' + _adminTierFields[i]);
+                if (el) el.value = '';
+            }
+            document.getElementById('at_sequence').value = '1';
+        }
+
+        function adminFillTierForm(tier) {
+            for (var i = 0; i < _adminTierFields.length; i++) {
+                var el = document.getElementById('at_' + _adminTierFields[i]);
+                if (el && tier[_adminTierFields[i]] !== undefined && tier[_adminTierFields[i]] !== null) {
+                    el.value = tier[_adminTierFields[i]];
+                } else if (el) {
+                    el.value = '';
+                }
+            }
+        }
+
+        function adminReadTierForm() {
+            var obj = {};
+            for (var i = 0; i < _adminTierFields.length; i++) {
+                var el = document.getElementById('at_' + _adminTierFields[i]);
+                obj[_adminTierFields[i]] = el ? el.value : '';
+            }
+            var nums = ['from_month','to_month','rate_value','reference_offset','sequence'];
+            for (var k = 0; k < nums.length; k++) {
+                if (obj[nums[k]]) obj[nums[k]] = parseFloat(obj[nums[k]]) || 0;
+            }
+            return obj;
         }
 
     </script>

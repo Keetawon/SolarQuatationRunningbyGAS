@@ -930,6 +930,141 @@ function _calcProgressiveBill(kWh, tiers, serviceCharge) {
   return total;
 }
 
+// ==================== Admin CRUD — Generic Engine ====================
+
+function adminGetAllRows(sheetName) {
+  return _sheetToObjects(sheetName);
+}
+
+function adminUpsertRow(sheetName, pkColName, rowData) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (!sheet) return { status: 'error', message: 'Sheet ' + sheetName + ' not found' };
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 1) return { status: 'error', message: 'Sheet has no headers' };
+    var headers = data[0].map(function(h) { return h.toString().trim(); });
+    var pkIdx = headers.indexOf(pkColName);
+    if (pkIdx < 0) return { status: 'error', message: 'PK column ' + pkColName + ' not found' };
+
+    var pkValue = rowData[pkColName];
+    var rowIndex = -1;
+    if (pkValue) {
+      rowIndex = _findRowByPk(sheet, pkIdx, pkValue);
+    }
+
+    // Build values array in header order
+    var values = [];
+    for (var c = 0; c < headers.length; c++) {
+      var v = rowData[headers[c]];
+      if (v === undefined || v === null) v = '';
+      // Convert ISO date strings back to Date
+      if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        v = new Date(v);
+      }
+      values.push(v);
+    }
+
+    if (rowIndex > 0) {
+      sheet.getRange(rowIndex, 1, 1, values.length).setValues([values]);
+    } else {
+      sheet.appendRow(values);
+    }
+
+    // Invalidate bootstrap cache
+    try {
+      CacheService.getScriptCache().remove('roi_bootstrap_v1');
+      CacheService.getScriptCache().remove('roi_bootstrap_v2');
+    } catch (e) {}
+
+    return { status: 'success', pk: pkValue || '' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function adminSoftDeleteRow(sheetName, pkColName, pkValue) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (!sheet) return { status: 'error', message: 'Sheet not found' };
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); });
+    var pkIdx = headers.indexOf(pkColName);
+    var statusIdx = headers.indexOf('status');
+    if (pkIdx < 0 || statusIdx < 0) return { status: 'error', message: 'Column not found' };
+
+    var rowIndex = _findRowByPk(sheet, pkIdx, pkValue);
+    if (rowIndex < 0) return { status: 'error', message: 'Row not found' };
+
+    sheet.getRange(rowIndex, statusIdx + 1).setValue('inactive');
+
+    try {
+      CacheService.getScriptCache().remove('roi_bootstrap_v1');
+      CacheService.getScriptCache().remove('roi_bootstrap_v2');
+    } catch (e) {}
+
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function adminHardDeleteRow(sheetName, pkColName, pkValue) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (!sheet) return { status: 'error', message: 'Sheet not found' };
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); });
+    var pkIdx = headers.indexOf(pkColName);
+    if (pkIdx < 0) return { status: 'error', message: 'PK column not found' };
+
+    var rowIndex = _findRowByPk(sheet, pkIdx, pkValue);
+    if (rowIndex < 0) return { status: 'error', message: 'Row not found' };
+
+    sheet.deleteRow(rowIndex);
+
+    try {
+      CacheService.getScriptCache().remove('roi_bootstrap_v1');
+      CacheService.getScriptCache().remove('roi_bootstrap_v2');
+    } catch (e) {}
+
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+function adminGeneratePlanId() {
+  return generateRunningID(ROI_SHEETS.plans, 'PLN-' + new Date().getFullYear() + '-');
+}
+
+function adminGenerateTierId(planId) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ROI_SHEETS.tiers);
+  var prefix = 'TIR-' + planId.replace('PLN-', '').replace(/-/g, '').substring(0, 10) + '-';
+  if (!sheet) return prefix + '001';
+
+  var data = sheet.getRange('A2:A').getValues();
+  var maxNum = 0;
+  for (var i = 0; i < data.length; i++) {
+    var id = data[i][0].toString();
+    if (id.indexOf(prefix) === 0) {
+      var num = parseInt(id.slice(prefix.length), 10);
+      if (num > maxNum) maxNum = num;
+    }
+  }
+  return prefix + ('00' + (maxNum + 1)).slice(-3);
+}
+
+function adminInvalidateCache() {
+  try {
+    CacheService.getScriptCache().remove('roi_bootstrap_v1');
+    CacheService.getScriptCache().remove('roi_bootstrap_v2');
+    return { status: 'ok' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
 // ==================== ROI Helper — Diagnostics ====================
 
 // Run this from the GAS editor (Run > diagRoi) to verify sheets are present.
