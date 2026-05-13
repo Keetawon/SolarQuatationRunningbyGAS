@@ -968,14 +968,43 @@ function diagRoi() {
   // Cache state
   try {
     var cache = CacheService.getScriptCache();
+    var v1 = cache.get('roi_bootstrap_v1');
+    var v2 = cache.get('roi_bootstrap_v2');
     report.cache = {
-      bootstrap: cache.get('roi_bootstrap_v1') ? 'cached (' + cache.get('roi_bootstrap_v1').length + ' chars)' : 'empty'
+      v1: v1 ? 'cached (' + v1.length + ' chars)' : 'empty',
+      v2: v2 ? 'cached (' + v2.length + ' chars)' : 'empty'
     };
   } catch (ce) {
     report.cache = { error: ce.message };
   }
   Logger.log(JSON.stringify(report, null, 2));
   return report;
+}
+
+// Diagnose what getBootstrapData actually returns. Run from GAS editor.
+function diagBootstrap() {
+  try {
+    var data = getBootstrapData();
+    var summary = {
+      keys: Object.keys(data),
+      counts: {},
+      sample: {}
+    };
+    Object.keys(data).forEach(function(k) {
+      var arr = data[k];
+      summary.counts[k] = Array.isArray(arr) ? arr.length : ('not-array: ' + typeof arr);
+      if (Array.isArray(arr) && arr.length > 0) {
+        summary.sample[k] = arr[0];
+      }
+    });
+    summary.totalSizeBytes = JSON.stringify(data).length;
+    Logger.log(JSON.stringify(summary, null, 2));
+    return summary;
+  } catch (e) {
+    var err = { error: e.message, stack: e.stack };
+    Logger.log(JSON.stringify(err, null, 2));
+    return err;
+  }
 }
 
 // Clear the ROI bootstrap cache (run from GAS editor after editing seed sheets).
