@@ -422,13 +422,13 @@ var RoiCalc = (function () {
     var hasCollateral = session.has_collateral || false;
     var hasCreditCard = session.has_credit_card || false;
 
-    // filter feasible plans
+    // filter feasible plans — only HARD prerequisites here.
+    // wantTaxDeduction is a SOFT preference handled in sort below, not a filter.
     var feasible = plans.filter(function (plan) {
       if (plan.financing_type === 'cash') return false;
       if (Number(plan.price_min) > loan) return false;
       if (Number(plan.price_max) < loan) return false;
       if (!_matchesDownOption(plan.down_percent_options, downPct)) return false;
-      if (wantTaxDeduction && plan.tax_deduction_eligible !== true && plan.tax_deduction_eligible !== 'TRUE') return false;
       if (!hasCollateral && (plan.requires_collateral === true || plan.requires_collateral === 'TRUE')) return false;
       if (!hasCreditCard && (plan.requires_credit_card_of_bank === true || plan.requires_credit_card_of_bank === 'TRUE')) return false;
       return true;
@@ -453,6 +453,7 @@ var RoiCalc = (function () {
         // weighted avg rate
         var weightedRate = _calcWeightedAvgRate(plan, tiers, term, downPct, benchmarks);
 
+        var taxOffered = plan.tax_deduction_eligible === true || plan.tax_deduction_eligible === 'TRUE';
         candidates.push({
           plan: plan,
           term: term,
@@ -463,31 +464,38 @@ var RoiCalc = (function () {
           monthlyNet: monthlyNet,
           monthlySaving: monthlySaving,
           weightedRate: weightedRate,
-          schedule: result.schedule
+          schedule: result.schedule,
+          taxBonus: (wantTaxDeduction && taxOffered) ? 1 : 0
         });
       }
     });
 
-    // sort by strategy
-    var sortFn;
+    // sort by strategy. Accept both short ("rate") and long ("lowest_rate")
+    // forms — the UI radios emit short, design doc uses long.
+    var primary;
     switch (strategy) {
-      case 'net':
-        sortFn = function (a, b) { return a.monthlyNet - b.monthlyNet; };
-        break;
+      case 'rate':
       case 'lowest_rate':
-        sortFn = function (a, b) { return a.weightedRate - b.weightedRate; };
+        primary = function (x) { return x.weightedRate; };
         break;
+      case 'monthly':
       case 'lowest_monthly':
-        sortFn = function (a, b) { return a.firstInstallment - b.firstInstallment; };
+        primary = function (x) { return x.firstInstallment; };
         break;
+      case 'interest':
       case 'lowest_total_interest':
-        sortFn = function (a, b) { return a.totalInterest - b.totalInterest; };
+        primary = function (x) { return x.totalInterest; };
         break;
+      case 'net':
       default:
-        sortFn = function (a, b) { return a.monthlyNet - b.monthlyNet; };
+        primary = function (x) { return x.monthlyNet; };
     }
-
-    candidates.sort(sortFn);
+    // Stable two-key sort: taxBonus first (plans matching the soft tax
+    // preference rank ahead), then the chosen strategy.
+    candidates.sort(function (a, b) {
+      if (a.taxBonus !== b.taxBonus) return b.taxBonus - a.taxBonus;
+      return primary(a) - primary(b);
+    });
     return candidates.slice(0, 5);
   }
 

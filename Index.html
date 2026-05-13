@@ -2179,7 +2179,9 @@
             var container = document.getElementById('roi_applianceBody');
 
             var watts = Number(a.default_watts) || 0;
-            var dayHrs = Number(a.typical_day_hours) || 0;
+            // Day hours capped at 10: Thailand solar productive window is
+            // ~10 hours (8:00-18:00). Anything beyond that runs on grid.
+            var dayHrs = Math.min(10, Number(a.typical_day_hours) || 0);
             var nightHrs = Number(a.typical_night_hours) || 0;
             var duty = Number(a.typical_duty_cycle) || 1;
 
@@ -2198,7 +2200,7 @@
                 '<div class="row g-2">' +
                     '<div class="col-3"><small class="text-muted">จำนวน</small><input type="number" class="form-control form-control-sm app-qty" value="1" min="1" oninput="roiCalcApplianceSummary()"></div>' +
                     '<div class="col-3"><small class="text-muted">Watt</small><input type="number" class="form-control form-control-sm app-watts" value="' + watts + '" min="0" oninput="roiCalcApplianceSummary()"></div>' +
-                    '<div class="col-3"><small class="text-muted">ชม.(วัน)</small><input type="number" class="form-control form-control-sm app-dayhrs" value="' + dayHrs + '" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(วัน, สูงสุด 10)</small><input type="number" class="form-control form-control-sm app-dayhrs" value="' + dayHrs + '" min="0" max="10" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
                     '<div class="col-3"><small class="text-muted">ชม.(คืน)</small><input type="number" class="form-control form-control-sm app-nighthrs" value="' + nightHrs + '" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
                 '</div>';
 
@@ -2225,8 +2227,8 @@
                 '<div class="row g-2">' +
                     '<div class="col-3"><small class="text-muted">จำนวน</small><input type="number" class="form-control form-control-sm app-qty" value="1" min="1" oninput="roiCalcApplianceSummary()"></div>' +
                     '<div class="col-3"><small class="text-muted">Watt</small><input type="number" class="form-control form-control-sm app-watts" value="" min="0" placeholder="Watt" oninput="roiCalcApplianceSummary()"></div>' +
-                    '<div class="col-3"><small class="text-muted">ชม.(วัน)</small><input type="number" class="form-control form-control-sm app-dayhrs" value="0" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
-                    '<div class="col-3"><small class="text-muted">ชม.(คืน)</small><input type="number" class="form-control form-control-sm app-nighthrs" value="0" min="0" max="24" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(วัน, สูงสุด 10)</small><input type="number" class="form-control form-control-sm app-dayhrs" value="0" min="0" max="10" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
+                    '<div class="col-3"><small class="text-muted">ชม.(คืน)</small><input type="number" class="form-control form-control-sm app-nighthrs" value="0" min="0" max="14" step="0.5" oninput="roiCalcApplianceSummary()"></div>' +
                 '</div>';
 
             container.appendChild(card);
@@ -2400,6 +2402,7 @@
 
             if (!roiFinancingResults || roiFinancingResults.length === 0) {
                 noResult.classList.remove('d-none');
+                noResult.innerHTML = roiBuildEmptyFinanceReason(loan, session);
                 return;
             }
             noResult.classList.add('d-none');
@@ -2434,6 +2437,40 @@
                     '</div>';
                 container.appendChild(card);
             }
+        }
+
+        function roiBuildEmptyFinanceReason(loan, session) {
+            if (!roiBootstrap || !roiBootstrap.plans) return 'ไม่พบแผนไฟเนาซ์ที่เหมาะสม';
+            var downPct = Number(session.selected_down_percent) || 0;
+            var hasCollateral = !!session.has_collateral;
+            var hasCreditCard = !!session.has_credit_card;
+            var counts = { price: 0, down: 0, collat: 0, cc: 0 };
+            roiBootstrap.plans.forEach(function (p) {
+                if (p.financing_type === 'cash') return;
+                if (Number(p.price_min) > loan || Number(p.price_max) < loan) { counts.price++; return; }
+                var optionsStr = (p.down_percent_options || '').toString();
+                var parts = optionsStr.split(',').map(function (s) { return s.trim(); });
+                var downOk = parts.indexOf('*') !== -1;
+                if (!downOk) {
+                    for (var i = 0; i < parts.length; i++) {
+                        var n = parseFloat(parts[i]);
+                        if (isNaN(n)) continue;
+                        var pct = n <= 1 ? n * 100 : n;
+                        if (Math.abs(pct - downPct) < 0.5) { downOk = true; break; }
+                    }
+                }
+                if (!downOk) { counts.down++; return; }
+                if (!hasCollateral && (p.requires_collateral === true || p.requires_collateral === 'TRUE')) { counts.collat++; return; }
+                if (!hasCreditCard && (p.requires_credit_card_of_bank === true || p.requires_credit_card_of_bank === 'TRUE')) { counts.cc++; return; }
+            });
+            var lines = ['<strong>ไม่พบแผนไฟเนาซ์ที่เหมาะสม</strong> ลองปรับ:'];
+            lines.push('<ul class="mb-0 mt-2">');
+            if (counts.down > 0) lines.push('<li>เปลี่ยน <strong>เงินดาวน์</strong> (ปัจจุบัน ' + downPct + '%) — มี ' + counts.down + ' แผนที่ดาวน์ต่างจากนี้</li>');
+            if (counts.collat > 0 && !hasCollateral) lines.push('<li>เปิดสวิตช์ <strong>มีบ้านค้ำประกัน</strong> — จะปลดล็อก ' + counts.collat + ' แผน Home Equity</li>');
+            if (counts.cc > 0 && !hasCreditCard) lines.push('<li>เปิดสวิตช์ <strong>มีบัตรเครดิตของแบงค์</strong> — จะปลดล็อก ' + counts.cc + ' แผนผ่อนบัตร</li>');
+            if (counts.price > 0) lines.push('<li>วงเงิน ' + Math.round(loan).toLocaleString() + ' บาท อยู่นอกช่วงของ ' + counts.price + ' แผน</li>');
+            lines.push('</ul>');
+            return lines.join('');
         }
 
         function roiSelectPlan(idx) {
