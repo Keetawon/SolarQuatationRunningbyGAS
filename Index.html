@@ -545,7 +545,7 @@
                             <div class="col-12 d-none" id="roi_splitAppliance">
                                 <label class="form-label fw-bold">เลือกเครื่องใช้ไฟฟ้า</label>
                                 <div class="position-relative mb-2">
-                                    <input type="text" id="roi_appSearch" class="form-control" placeholder="ค้นหาเครื่องใช้ไฟ... เช่น แอร์, ตู้เย็น, ทีวี" oninput="roiFilterAppliances()">
+                                    <input type="text" id="roi_appSearch" class="form-control" placeholder="คลิกเพื่อดูรายการ หรือพิมพ์ค้นหา... เช่น แอร์, ตู้เย็น, ทีวี" oninput="roiFilterAppliances()" onfocus="roiFilterAppliances()">
                                     <div id="roi_appDropdown" class="list-group shadow-sm d-none" style="position:absolute;z-index:1000;max-height:220px;overflow-y:auto;width:100%;border-radius:12px;margin-top:4px;"></div>
                                 </div>
                                 <div id="roi_applianceBody"></div>
@@ -674,21 +674,27 @@
                     <div class="roi-step" id="roi-step-6">
                         <h5 class="card-title-custom">แนะนำแผนไฟเนาซ์</h5>
                         <div class="row g-3 mb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="roi_wantTaxDeduct" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_wantTaxDeduct">ต้องการลดหย่อนภาษี</label>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="roi_hasCollateral" onchange="roiCalcFinancing()">
-                                    <label class="form-check-label" for="roi_hasCollateral">มีบ้านคู่มือ</label>
+                                    <label class="form-check-label" for="roi_hasCollateral">มีบ้านค้ำประกัน</label>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="roi_hasCreditCard" onchange="roiCalcFinancing()">
+                                    <label class="form-check-label" for="roi_hasCreditCard">มีบัตรเครดิตของแบงค์</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold">เงินดาวน์ (%)</label>
-                                <input type="number" id="roi_downPercent" class="form-control" value="0" min="0" max="100" step="10" oninput="roiCalcFinancing()">
+                                <input type="number" id="roi_downPercent" class="form-control" value="0" min="0" max="100" step="5" oninput="roiCalcFinancing()">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -2488,6 +2494,9 @@
                 existing_solar: document.getElementById('roi_existingSolar').checked,
                 selected_rank_strategy: rankStrategy ? rankStrategy.value : 'net',
                 selected_down_percent: parseFloat(document.getElementById('roi_downPercent').value) || 0,
+                want_tax_deduction: !!(document.getElementById('roi_wantTaxDeduct') && document.getElementById('roi_wantTaxDeduct').checked),
+                has_collateral: !!(document.getElementById('roi_hasCollateral') && document.getElementById('roi_hasCollateral').checked),
+                has_credit_card: !!(document.getElementById('roi_hasCreditCard') && document.getElementById('roi_hasCreditCard').checked),
                 notes: ''
             };
 

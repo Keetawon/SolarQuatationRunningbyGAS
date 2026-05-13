@@ -427,8 +427,7 @@ var RoiCalc = (function () {
       if (plan.financing_type === 'cash') return false;
       if (Number(plan.price_min) > loan) return false;
       if (Number(plan.price_max) < loan) return false;
-      var downOptions = plan.down_percent_options.toString().split(',');
-      if (downOptions.indexOf(String(downPct)) === -1 && downOptions.indexOf('*') === -1) return false;
+      if (!_matchesDownOption(plan.down_percent_options, downPct)) return false;
       if (wantTaxDeduction && plan.tax_deduction_eligible !== true && plan.tax_deduction_eligible !== 'TRUE') return false;
       if (!hasCollateral && (plan.requires_collateral === true || plan.requires_collateral === 'TRUE')) return false;
       if (!hasCreditCard && (plan.requires_credit_card_of_bank === true || plan.requires_credit_card_of_bank === 'TRUE')) return false;
@@ -490,6 +489,29 @@ var RoiCalc = (function () {
 
     candidates.sort(sortFn);
     return candidates.slice(0, 5);
+  }
+
+  // Match a UI down-payment percent (0-100 integer) against a plan's
+  // down_percent_options column, which may be authored as either:
+  //   - fractional list "0.10,0.15,0.20"  (one-tenth = 10%)
+  //   - integer percent list "10,15,20"
+  //   - single value "0" or "1"
+  //   - wildcard "*"
+  function _matchesDownOption(rawOptions, downPct) {
+    if (rawOptions === undefined || rawOptions === null || rawOptions === '') return true;
+    var optionsStr = rawOptions.toString();
+    var parts = optionsStr.split(',').map(function (s) { return s.trim(); });
+    if (parts.indexOf('*') !== -1) return true;
+    var target = Number(downPct);
+    if (isNaN(target)) return false;
+    for (var i = 0; i < parts.length; i++) {
+      var n = parseFloat(parts[i]);
+      if (isNaN(n)) continue;
+      // Values <= 1 are fractions (0.10 → 10%); >1 are already percent.
+      var asPct = n <= 1 ? n * 100 : n;
+      if (Math.abs(asPct - target) < 0.5) return true;
+    }
+    return false;
   }
 
   function _calcWeightedAvgRate(plan, tiers, termMonths, downPct, benchmarks) {
