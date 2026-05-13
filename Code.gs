@@ -571,7 +571,8 @@ function getBootstrapData() {
 
 function searchRoiSessions(query, limit) {
   if (!limit) limit = 20;
-  if (!query) return [];
+  // Empty query means "list recent" — frontend uses this for the "show all" button.
+  var listAll = (query === undefined || query === null || query === '');
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('roi_session');
     if (!sheet) return [];
@@ -586,22 +587,26 @@ function searchRoiSessions(query, limit) {
     var kwIdx = headers.indexOf('selected_kw');
     var netIdx = headers.indexOf('monthly_net');
 
-    if (labelIdx === -1 || idIdx === -1) return [];
+    if (idIdx === -1) return [];
 
-    var q = query.toString().toLowerCase();
+    var q = listAll ? '' : query.toString().toLowerCase();
     var results = [];
-    for (var i = 1; i < data.length; i++) {
-      var label = data[i][labelIdx] ? data[i][labelIdx].toString().toLowerCase() : '';
-      if (label.indexOf(q) !== -1) {
-        results.push({
-          session_id: data[i][idIdx],
-          customer_label: data[i][labelIdx],
-          status: statusIdx >= 0 ? data[i][statusIdx] : '',
-          last_updated: updatedIdx >= 0 ? data[i][updatedIdx] : '',
-          selected_kw: kwIdx >= 0 ? data[i][kwIdx] : 0,
-          monthly_net: netIdx >= 0 ? data[i][netIdx] : 0
-        });
+    // Iterate newest first (bottom of sheet) so "list recent" returns latest sessions.
+    for (var i = data.length - 1; i >= 1; i--) {
+      var sid = data[i][idIdx];
+      if (!sid) continue;
+      var label = (labelIdx >= 0 && data[i][labelIdx]) ? data[i][labelIdx].toString() : '';
+      if (!listAll && label.toLowerCase().indexOf(q) === -1 && sid.toString().toLowerCase().indexOf(q) === -1) {
+        continue;
       }
+      results.push({
+        session_id: sid,
+        customer_label: label,
+        status: statusIdx >= 0 ? data[i][statusIdx] : '',
+        last_updated: updatedIdx >= 0 ? (data[i][updatedIdx] instanceof Date ? data[i][updatedIdx].toISOString() : data[i][updatedIdx]) : '',
+        selected_kw: kwIdx >= 0 ? data[i][kwIdx] : 0,
+        monthly_net: netIdx >= 0 ? data[i][netIdx] : 0
+      });
       if (results.length >= limit) break;
     }
     return results;
