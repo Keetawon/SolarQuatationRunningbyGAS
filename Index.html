@@ -1062,14 +1062,6 @@
                                                 <td class="text-muted">ผ่อนชำระ</td>
                                                 <td class="text-end fw-bold"><span id="roi_buyTerm">-</span> งวด × <span id="roi_buyMonthly">-</span> ฿/เดือน</td>
                                             </tr>
-                                            <tr>
-                                                <td class="text-muted">ดอกเบี้ยรวมตลอดสัญญา</td>
-                                                <td class="text-end"><span id="roi_buyTotalInterest">-</span> ฿ <small class="text-muted" id="roi_buyAvgRate">-</small></td>
-                                            </tr>
-                                            <tr id="roi_buyFeeRow">
-                                                <td class="text-muted">ค่าธรรมเนียม + VAT (ดอกเบี้ย)</td>
-                                                <td class="text-end"><span id="roi_buyFees">-</span> ฿</td>
-                                            </tr>
                                             <tr class="border-top">
                                                 <td class="fw-bold">ยอดผ่อนรวมตลอดสัญญา</td>
                                                 <td class="text-end fw-bold text-primary"><span id="roi_buyTotalRepay">-</span> ฿</td>
@@ -1081,6 +1073,26 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                <!-- Sales-only breakdown: customer-facing screens
+                                     should NOT default-show ดอกเบี้ย/ค่าธรรมเนียม —
+                                     the rep can flip it open when needed. -->
+                                <details class="mt-2 small roi-internal-only">
+                                    <summary class="text-muted" style="cursor: pointer; user-select: none;">
+                                        👁 ดูรายละเอียดดอกเบี้ย <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">เซลล์เท่านั้น</span>
+                                    </summary>
+                                    <table class="table table-sm align-middle mt-2 mb-0">
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-muted">ดอกเบี้ยรวมตลอดสัญญา</td>
+                                                <td class="text-end"><span id="roi_buyTotalInterest">-</span> ฿ <small class="text-muted" id="roi_buyAvgRate">-</small></td>
+                                            </tr>
+                                            <tr id="roi_buyFeeRow">
+                                                <td class="text-muted">ค่าธรรมเนียม + VAT (ดอกเบี้ย)</td>
+                                                <td class="text-end"><span id="roi_buyFees">-</span> ฿</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </details>
                                 <div class="mt-2 text-muted small">
                                     สินเชื่อ: <strong id="roi_buyBank">-</strong> · <span id="roi_buyPlanName">-</span>
                                 </div>
@@ -3991,6 +4003,9 @@
         function roiCopyPurchaseSummary() {
             var s = window.__roiPurchaseSummary;
             if (!s) return;
+            // Customer-safe text — intentionally omits ดอกเบี้ยรวม so a rep
+            // pasting into a chat/quote doesn't accidentally expose the
+            // interest breakdown that scares customers off.
             var lines = [
                 'สรุปการซื้อ',
                 'สินค้า: ' + s.product + ' (' + s.spec + ')',
@@ -4000,7 +4015,6 @@
                 'เงินดาวน์ ' + s.downPct.toFixed(s.downPct % 1 === 0 ? 0 : 1) + '%: ' + s.downAmt.toLocaleString() + ' ฿',
                 'ยอดสินเชื่อ: ' + s.loanAmt.toLocaleString() + ' ฿',
                 'ผ่อน: ' + s.term + ' งวด × ' + s.monthly.toLocaleString() + ' ฿/เดือน',
-                'ดอกเบี้ยรวม: ' + s.totalInterest.toLocaleString() + ' ฿',
                 'ยอดผ่อนรวม: ' + s.totalRepay.toLocaleString() + ' ฿',
                 'รวมจ่ายทั้งหมด: ' + s.grandTotal.toLocaleString() + ' ฿'
             ];
