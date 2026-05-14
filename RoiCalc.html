@@ -30,25 +30,27 @@ var RoiCalc = (function () {
       var excessD = Math.max(0, solarDaily - dayDaily);
       var battCapacityEffective = kWhBatt * (inputs.batteryDod || 0.9);
       var maxUsefulCharge = nightDaily / (inputs.batteryRoundTrip || 0.92);
-      
+
       // ชาร์จไฟเท่าที่มี excess, สูงสุดไม่เกินความจุแบตเตอรี่, และสูงสุดไม่เกินปริมาณไฟที่ต้องใช้กลางคืน
       chargeD = Math.min(excessD, battCapacityEffective, maxUsefulCharge);
-      
+
       battOut = chargeD * (inputs.batteryRoundTrip || 0.92);
-      
+
       // ไฟผลิตเกินส่วนที่เหลือจากการชาร์จ จะถูกนำไปขาย
       sellD = Math.max(0, excessD - chargeD);
-      
+
       var buyND = Math.max(0, nightDaily - battOut); // battOut <= nightDaily อยู่แล้ว
       var buyDD = Math.max(0, dayDaily - solarDaily);
       buyD = buyND + buyDD;
-      
+
       selfD = Math.min(solarDaily, dayDaily) + battOut;
     } else {
       // Case 1: no battery
       selfD = Math.min(solarDaily, dayDaily);
       sellD = Math.max(0, solarDaily - dayDaily);
-      buyD = nightDaily + Math.max(0, dayDaily - solarDaily);
+      var buyDD = Math.max(0, dayDaily - solarDaily);
+      var buyND = nightDaily;
+      buyD = buyND + buyDD;
       chargeD = 0;
       battOut = 0;
     }
@@ -61,6 +63,8 @@ var RoiCalc = (function () {
       selfD: selfD,
       sellD: sellD,
       buyD: buyD,
+      buyDD: buyDD,
+      buyND: buyND,
       chargeD: chargeD || 0,
       battOut: battOut || 0,
       hasBattery: kWhBatt > 0
@@ -773,6 +777,8 @@ var RoiCalc = (function () {
     var selfKwhMo   = (flow.selfD      || 0) * MO;
     var sellKwhMo   = (flow.sellD      || 0) * MO;
     var buyKwhMo    = (flow.buyD       || 0) * MO;
+    var buyDayKwhMo = (flow.buyDD      || 0) * MO;
+    var buyNightKwhMo = (flow.buyND    || 0) * MO;
     var chargeKwhMo = (flow.chargeD    || 0) * MO;
     var battOutKwhMo= (flow.battOut    || 0) * MO;
     var dayDirectKwhMo = Math.max(0, selfKwhMo - battOutKwhMo);
@@ -792,6 +798,20 @@ var RoiCalc = (function () {
     var currentBillMo = Number(session && session.monthly_bill) || (Number(inputs.monthlyKwh) || 0) * elecRate;
     var newBillMo = Math.max(0, currentBillMo - totalSavingMo);
 
+    // Bill-anchored day/night split — sums to the user's actual bill, so the
+    // table and the pills above tell the same story (no "750 vs 672 ฿"
+    // discrepancy between bill-fraction-split and kWh×rate math).
+    var dayFrac = Number(inputs.dayFraction) || 0.4;
+    var dayBillBefore = currentBillMo * dayFrac;
+    var nightBillBefore = currentBillMo * (1 - dayFrac);
+
+    var totalBuy = buyDayKwhMo + buyNightKwhMo;
+    var dayBuyFrac = totalBuy > 0 ? buyDayKwhMo / totalBuy : 0;
+    var dayBillAfter = newBillMo * dayBuyFrac;
+    var nightBillAfter = newBillMo * (1 - dayBuyFrac);
+    var daySavingBillMo = Math.max(0, dayBillBefore - dayBillAfter);
+    var nightSavingBillMo = Math.max(0, nightBillBefore - nightBillAfter);
+
     var installmentMo = 0;
     if (planResult) {
       installmentMo = Number(planResult.firstInstallment) || Number(planResult.monthlyPayment) || 0;
@@ -801,21 +821,52 @@ var RoiCalc = (function () {
     var outlayAfter  = newBillMo + installmentMo - fitIncomeMo;
     var outlayDelta  = outlayAfter - outlayBefore;
 
+    // Battery sizing diagnostic: flag when the battery is the binding constraint
+    // on how much excess solar can be stored. Sales-facing copy uses this to
+    // suggest upsizing — currently the only place the system tells a rep that
+    // the picked battery is small for the picked solar.
+    var batteryBottleneck = false;
+    var batterySuggestKwh = 0;
+    if (hasBattery) {
+      var excessD = Math.max(0, (flow.solarDaily || 0) - (flow.dayDaily || 0));
+      var battKwh = Number(product.battery_kwh) || 0;
+      var dod = Number(inputs.batteryDod) || 0.9;
+      var rt = Number(inputs.batteryRoundTrip) || 0.92;
+      var battCapEff = battKwh * dod;
+      var maxUseful = (flow.nightDaily || 0) / rt;
+      if (excessD > battCapEff + 0.1 && maxUseful > battCapEff + 0.1) {
+        batteryBottleneck = true;
+        batterySuggestKwh = Math.ceil(Math.min(excessD, maxUseful) / dod);
+      }
+    }
+
     return {
       elecRate: elecRate,
       fitPrice: fitPrice,
       includeFit: includeFit,
       hasBattery: hasBattery,
       solarKwhMo: solarKwhMo,
+      solarValueMo: solarKwhMo * elecRate,
       dayDirectKwhMo: dayDirectKwhMo,
       selfKwhMo: selfKwhMo,
       sellKwhMo: sellKwhMo,
+      sellValueMo: sellKwhMo * (includeFit ? fitPrice : 0),
       buyKwhMo: buyKwhMo,
+      buyDayKwhMo: buyDayKwhMo,
+      buyNightKwhMo: buyNightKwhMo,
       chargeKwhMo: chargeKwhMo,
       battOutKwhMo: battOutKwhMo,
       buyCostMo: buyKwhMo * elecRate,
       daySavingMo: daySavingMo,
       nightSavingMo: nightSavingMo,
+      // Bill-anchored split — preferred for UI rendering
+      dayFrac: dayFrac,
+      dayBillBefore: dayBillBefore,
+      nightBillBefore: nightBillBefore,
+      dayBillAfter: dayBillAfter,
+      nightBillAfter: nightBillAfter,
+      daySavingBillMo: daySavingBillMo,
+      nightSavingBillMo: nightSavingBillMo,
       fitIncomeMo: fitIncomeMo,
       totalSavingMo: totalSavingMo,
       currentBillMo: currentBillMo,
@@ -823,7 +874,9 @@ var RoiCalc = (function () {
       installmentMo: installmentMo,
       outlayBefore: outlayBefore,
       outlayAfter: outlayAfter,
-      outlayDelta: outlayDelta
+      outlayDelta: outlayDelta,
+      batteryBottleneck: batteryBottleneck,
+      batterySuggestKwh: batterySuggestKwh
     };
   }
 
