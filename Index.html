@@ -1027,6 +1027,65 @@
                                 </div>
                             </div>
 
+                            <!-- NEW: Purchase Summary — feeds the quotation document -->
+                            <div class="card p-3 mb-4 text-start" style="border-radius: 15px; border: 2px dashed var(--ocean-main);">
+                                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                                    <h6 class="mb-0 fw-bold" style="color: var(--ocean-dark);">📋 สรุปการซื้อ <small class="text-muted fw-normal">(สำหรับนำไปทำใบเสนอราคา)</small></h6>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="roiCopyPurchaseSummary()" title="คัดลอกข้อความสรุปไปวางในใบเสนอราคา/แชต">📋 คัดลอก</button>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="text-muted small">สินค้าที่เลือก</div>
+                                        <div class="fw-bold" id="roi_buyProductName">-</div>
+                                        <div class="text-muted small" id="roi_buyProductSpec">-</div>
+                                    </div>
+                                    <div class="col-md-6 text-md-end">
+                                        <div class="text-muted small">ราคารวม</div>
+                                        <div class="fw-bold fs-5" style="color: var(--ocean-dark);"><span id="roi_buyTotalPrice">-</span> ฿</div>
+                                        <div class="text-muted small">รวม VAT แล้ว</div>
+                                    </div>
+                                </div>
+                                <hr class="my-3">
+                                <div class="text-muted small mb-2">แผนการชำระเงิน</div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-muted">เงินดาวน์ <span id="roi_buyDownPctLabel" class="badge bg-light text-dark ms-1">-</span></td>
+                                                <td class="text-end fw-bold"><span id="roi_buyDownAmt">-</span> ฿</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted">ยอดสินเชื่อ</td>
+                                                <td class="text-end fw-bold"><span id="roi_buyLoanAmt">-</span> ฿</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted">ผ่อนชำระ</td>
+                                                <td class="text-end fw-bold"><span id="roi_buyTerm">-</span> งวด × <span id="roi_buyMonthly">-</span> ฿/เดือน</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-muted">ดอกเบี้ยรวมตลอดสัญญา</td>
+                                                <td class="text-end"><span id="roi_buyTotalInterest">-</span> ฿ <small class="text-muted" id="roi_buyAvgRate">-</small></td>
+                                            </tr>
+                                            <tr id="roi_buyFeeRow">
+                                                <td class="text-muted">ค่าธรรมเนียม + VAT (ดอกเบี้ย)</td>
+                                                <td class="text-end"><span id="roi_buyFees">-</span> ฿</td>
+                                            </tr>
+                                            <tr class="border-top">
+                                                <td class="fw-bold">ยอดผ่อนรวมตลอดสัญญา</td>
+                                                <td class="text-end fw-bold text-primary"><span id="roi_buyTotalRepay">-</span> ฿</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">รวมจ่ายทั้งหมด <small class="text-muted fw-normal">(ดาวน์ + ผ่อนทุกงวด)</small></td>
+                                                <td class="text-end fw-bold fs-5" style="color: var(--ocean-dark);"><span id="roi_buyGrandTotal">-</span> ฿</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-2 text-muted small">
+                                    สินเชื่อ: <strong id="roi_buyBank">-</strong> · <span id="roi_buyPlanName">-</span>
+                                </div>
+                            </div>
+
                             <!-- KPI Cards Row -->
                             <div class="row g-3 mb-4">
                                 <div class="col-4">
@@ -3850,11 +3909,121 @@
             planDetail += ' | ดาวน์ ' + Math.round(planResult.downPct || 0) + '%';
             document.getElementById('roi_presPlanDetail').textContent = planDetail;
 
+            // Purchase summary — quotation-ready figures. The sales rep reads
+            // off this card when filling in the quote document, so every
+            // number here must be derivable directly from product + plan.
+            roiRenderPurchaseSummary(product, plan, planResult);
+
             // Draw chart
             roiDrawCashflowChart(prodResult);
 
             // 12-month schedule table
             roiRenderScheduleTable(planResult);
+        }
+
+        function roiRenderPurchaseSummary(product, plan, planResult) {
+            var price = Number(product.price) || 0;
+            // downPct from rankFinancingPlans is stored as percent (0-100)
+            // when source was the user's input; normalize anyway in case the
+            // tier matched a fractional value from the sheet.
+            var rawDown = Number(planResult.downPct) || 0;
+            var downPct = rawDown <= 1 ? rawDown * 100 : rawDown;
+            var downAmt = Math.round(price * downPct / 100);
+            var loanAmt = Math.max(0, price - downAmt);
+            var term = Number(planResult.term) || 0;
+            var monthly = Math.round(Number(planResult.firstInstallment) || Number(planResult.monthlyPayment) || 0);
+            var totalInterest = Math.round(Number(planResult.totalInterest) || 0);
+            var totalVat = Math.round(Number(planResult.totalVat) || 0);
+            var totalFees = Math.round(Number(planResult.totalFees) || Number(planResult.processingFee) || 0);
+            // For purchase summary the "extra fees" line bundles processing
+            // fee + VAT charged on interest — so the rep sees one number.
+            var extraFees = totalVat + totalFees;
+            var totalRepay = monthly * term;  // sum of all installments
+            var grandTotal = downAmt + totalRepay;
+
+            var kw = Number(product.kw) || Number(product.kWp) || 0;
+            var batt = Number(product.battery_kwh) || 0;
+            var spec = kw + ' kWp';
+            if (batt > 0) spec += ' + แบตเตอรี่ ' + batt + ' kWh';
+
+            document.getElementById('roi_buyProductName').textContent = product.name || product.product_name || '-';
+            document.getElementById('roi_buyProductSpec').textContent = spec;
+            document.getElementById('roi_buyTotalPrice').textContent = price.toLocaleString();
+
+            document.getElementById('roi_buyDownPctLabel').textContent = downPct.toFixed(downPct % 1 === 0 ? 0 : 1) + '%';
+            document.getElementById('roi_buyDownAmt').textContent = downAmt.toLocaleString();
+            document.getElementById('roi_buyLoanAmt').textContent = loanAmt.toLocaleString();
+            document.getElementById('roi_buyTerm').textContent = term;
+            document.getElementById('roi_buyMonthly').textContent = monthly.toLocaleString();
+            document.getElementById('roi_buyTotalInterest').textContent = totalInterest.toLocaleString();
+            var avgRateLabel = planResult.weightedRate
+                ? '· ดอกเบี้ยเฉลี่ย ' + (planResult.weightedRate * 100).toFixed(2) + '%'
+                : '';
+            document.getElementById('roi_buyAvgRate').textContent = avgRateLabel;
+
+            var feeRow = document.getElementById('roi_buyFeeRow');
+            if (extraFees > 0) {
+                feeRow.style.display = '';
+                document.getElementById('roi_buyFees').textContent = extraFees.toLocaleString();
+            } else {
+                feeRow.style.display = 'none';
+            }
+
+            document.getElementById('roi_buyTotalRepay').textContent = totalRepay.toLocaleString();
+            document.getElementById('roi_buyGrandTotal').textContent = grandTotal.toLocaleString();
+
+            document.getElementById('roi_buyBank').textContent = plan.bank_label_th || plan.bank_code || '-';
+            document.getElementById('roi_buyPlanName').textContent = plan.product_name_th || plan.plan_name || '';
+
+            // Stash the latest values for the copy-to-clipboard helper.
+            window.__roiPurchaseSummary = {
+                product: product.name || product.product_name || '-',
+                spec: spec,
+                price: price, downPct: downPct, downAmt: downAmt,
+                loanAmt: loanAmt, term: term, monthly: monthly,
+                totalInterest: totalInterest, totalRepay: totalRepay,
+                grandTotal: grandTotal,
+                bank: plan.bank_label_th || plan.bank_code || '-',
+                planName: plan.product_name_th || plan.plan_name || ''
+            };
+        }
+
+        function roiCopyPurchaseSummary() {
+            var s = window.__roiPurchaseSummary;
+            if (!s) return;
+            var lines = [
+                'สรุปการซื้อ',
+                'สินค้า: ' + s.product + ' (' + s.spec + ')',
+                'ราคารวม: ' + s.price.toLocaleString() + ' ฿ (รวม VAT)',
+                '',
+                'แผนการชำระเงิน — ' + s.bank + (s.planName ? ' / ' + s.planName : ''),
+                'เงินดาวน์ ' + s.downPct.toFixed(s.downPct % 1 === 0 ? 0 : 1) + '%: ' + s.downAmt.toLocaleString() + ' ฿',
+                'ยอดสินเชื่อ: ' + s.loanAmt.toLocaleString() + ' ฿',
+                'ผ่อน: ' + s.term + ' งวด × ' + s.monthly.toLocaleString() + ' ฿/เดือน',
+                'ดอกเบี้ยรวม: ' + s.totalInterest.toLocaleString() + ' ฿',
+                'ยอดผ่อนรวม: ' + s.totalRepay.toLocaleString() + ' ฿',
+                'รวมจ่ายทั้งหมด: ' + s.grandTotal.toLocaleString() + ' ฿'
+            ];
+            var text = lines.join('\n');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function () {
+                    alert('คัดลอกแล้ว — วางในใบเสนอราคา/แชตได้เลย');
+                }, function () { _roiFallbackCopy(text); });
+            } else {
+                _roiFallbackCopy(text);
+            }
+        }
+
+        function _roiFallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); alert('คัดลอกแล้ว'); }
+            catch (e) { alert('คัดลอกอัตโนมัติไม่ได้ — ลองเลือกข้อความเองครับ'); }
+            document.body.removeChild(ta);
         }
 
         function roiSendToQuotation() {
