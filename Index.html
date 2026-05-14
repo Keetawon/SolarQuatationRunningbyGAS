@@ -2514,33 +2514,53 @@
             google.script.run
                 .withSuccessHandler(function (results) {
                     container.classList.remove('d-none');
-                    if (!results || results.length === 0) {
-                        container.innerHTML = '<div class="list-group-item text-muted">ไม่พบ session</div>';
-                        return;
-                    }
-                    var html = '';
-                    for (var i = 0; i < results.length; i++) {
-                        var r = results[i];
-                        html += '<div class="list-group-item list-group-item-action" onclick="roiLoadSession(\'' + r.session_id + '\')">';
-                        html += '<strong>' + (r.customer_label || '-') + '</strong>';
-                        html += ' <small class="text-muted">(' + r.session_id + ')</small>';
-                        html += '<br><small>' + (r.status || '') + ' | ' + (r.last_updated || '') + '</small>';
-                        if (r.selected_kw) {
-                            html += ' <span class="badge bg-info">' + r.selected_kw + ' kWp</span>';
-                        }
-                        if (r.monthly_net) {
-                            html += ' <span class="badge bg-success">Net ' + Math.round(r.monthly_net) + ' THB</span>';
-                        }
-                        html += '</div>';
-                    }
-                    container.innerHTML = html;
+                    _roiRenderSessionList(container, results, { includeNet: true, emptyMsg: 'ไม่พบ session' });
                 })
                 .withFailureHandler(function (err) {
                     container.classList.remove('d-none');
-                    container.innerHTML = '<div class="list-group-item text-danger">ผิดพลาด: ' + err.message + '</div>';
+                    container.innerHTML = '<div class="list-group-item text-danger">ผิดพลาด: ' + _esc(err && err.message) + '</div>';
                 })
                 .searchRoiSessions(query, 20);
         }
+
+        // Render a list of ROI sessions into the container. customer_label /
+        // status / last_updated all come straight from the sheet, so they must
+        // be HTML-escaped before going into innerHTML. Click handling uses a
+        // delegated listener keyed off data-session-id (attached once below).
+        function _roiRenderSessionList(container, results, opts) {
+            opts = opts || {};
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="list-group-item text-muted">' + _esc(opts.emptyMsg || 'ยังไม่มี session') + '</div>';
+                return;
+            }
+            var parts = [];
+            for (var i = 0; i < results.length; i++) {
+                var r = results[i];
+                var row = '<div class="list-group-item list-group-item-action roi-session-row" data-session-id="' + _esc(r.session_id) + '" style="cursor:pointer">';
+                row += '<strong>' + _esc(r.customer_label || '-') + '</strong>';
+                row += ' <small class="text-muted">(' + _esc(r.session_id) + ')</small>';
+                row += '<br><small>' + _esc(r.status || '') + ' | ' + _esc(r.last_updated || '') + '</small>';
+                if (r.selected_kw) {
+                    row += ' <span class="badge bg-info">' + _esc(r.selected_kw) + ' kWp</span>';
+                }
+                if (opts.includeNet && r.monthly_net) {
+                    row += ' <span class="badge bg-success">Net ' + Math.round(Number(r.monthly_net) || 0) + ' THB</span>';
+                }
+                row += '</div>';
+                parts.push(row);
+            }
+            container.innerHTML = parts.join('');
+        }
+
+        // Delegated click handler for session rows — attached once on the
+        // common parent container so re-rendering the list doesn't leak
+        // listeners.
+        document.addEventListener('click', function (ev) {
+            var row = ev.target.closest && ev.target.closest('.roi-session-row');
+            if (!row) return;
+            var id = row.getAttribute('data-session-id');
+            if (id) roiLoadSession(id);
+        });
 
         function roiLoadAllSessions() {
             var container = document.getElementById('roi_searchResults');
@@ -2548,26 +2568,10 @@
             container.classList.remove('d-none');
             google.script.run
                 .withSuccessHandler(function (results) {
-                    if (!results || results.length === 0) {
-                        container.innerHTML = '<div class="list-group-item text-muted">ยังไม่มี session</div>';
-                        return;
-                    }
-                    var html = '';
-                    for (var i = 0; i < results.length; i++) {
-                        var r = results[i];
-                        html += '<div class="list-group-item list-group-item-action" onclick="roiLoadSession(\'' + r.session_id + '\')">';
-                        html += '<strong>' + (r.customer_label || '-') + '</strong>';
-                        html += ' <small class="text-muted">(' + r.session_id + ')</small>';
-                        html += '<br><small>' + (r.status || '') + ' | ' + (r.last_updated || '') + '</small>';
-                        if (r.selected_kw) {
-                            html += ' <span class="badge bg-info">' + r.selected_kw + ' kWp</span>';
-                        }
-                        html += '</div>';
-                    }
-                    container.innerHTML = html;
+                    _roiRenderSessionList(container, results, { emptyMsg: 'ยังไม่มี session' });
                 })
                 .withFailureHandler(function (err) {
-                    container.innerHTML = '<div class="list-group-item text-danger">ผิดพลาด: ' + err.message + '</div>';
+                    container.innerHTML = '<div class="list-group-item text-danger">ผิดพลาด: ' + _esc(err && err.message) + '</div>';
                 })
                 .searchRoiSessions('', 50);
         }
@@ -2764,8 +2768,8 @@
             for (var j = 0; j < Math.min(filtered.length, 30); j++) {
                 var f = filtered[j];
                 var watts = Number(f.app.default_watts) || 0;
-                html += '<button type="button" class="list-group-item list-group-item-action py-2" onclick="roiAddAppliance(' + f.idx + ')">';
-                html += '<strong>' + (f.app.name_th || '-') + '</strong>';
+                html += '<button type="button" class="list-group-item list-group-item-action py-2" onclick="roiAddAppliance(' + Number(f.idx) + ')">';
+                html += '<strong>' + _esc(f.app.name_th || '-') + '</strong>';
                 html += ' <small class="text-muted">' + watts + 'W</small>';
                 html += '</button>';
             }
@@ -2793,7 +2797,7 @@
 
             card.innerHTML =
                 '<div class="d-flex align-items-center mb-1">' +
-                    '<strong class="flex-grow-1">' + (a.name_th || '-') + '</strong>' +
+                    '<strong class="flex-grow-1">' + _esc(a.name_th || '-') + '</strong>' +
                     '<span class="badge bg-light text-dark">' + watts + 'W</span>' +
                     '<button type="button" class="btn-close btn-sm ms-2" onclick="this.closest(\'.card\').remove(); roiCalcApplianceSummary();"></button>' +
                 '</div>' +
@@ -2951,9 +2955,14 @@
                 batt: suggestedBatt
             };
             
-            recText.innerHTML = 'จากค่าไฟ <strong>' + kwh + ' หน่วย/เดือน</strong><br>' +
-                                'ระบบแนะนำ: โซลาร์ <strong>' + suggestedKw + ' kWp</strong>' + 
-                                (suggestedBatt > 0 ? ' + แบตเตอรี่ <strong>' + suggestedBatt + ' kWh</strong>' : ' (ไม่ใช้แบตเตอรี่)');
+            // All three values are locally-computed numbers — coerce to
+            // finite-safe values so NaN / Infinity never reach the DOM.
+            var kwhSafe = Number.isFinite(kwh) ? Math.round(kwh) : 0;
+            var kwSafe = Number.isFinite(suggestedKw) ? suggestedKw : 0;
+            var battSafe = Number.isFinite(suggestedBatt) ? suggestedBatt : 0;
+            recText.innerHTML = 'จากค่าไฟ <strong>' + kwhSafe + ' หน่วย/เดือน</strong><br>' +
+                                'ระบบแนะนำ: โซลาร์ <strong>' + kwSafe + ' kWp</strong>' +
+                                (battSafe > 0 ? ' + แบตเตอรี่ <strong>' + battSafe + ' kWh</strong>' : ' (ไม่ใช้แบตเตอรี่)');
             recWrap.style.display = 'block';
         }
         
@@ -3055,9 +3064,15 @@
 
                 var tags = '';
                 if (i === 0) tags += '<span class="roi-badge roi-badge-best">แนะนำ</span> ';
-                if (p.tags) {
-                    for (var t = 0; t < p.tags.length; t++) {
-                        tags += '<span class="roi-badge roi-badge-fit">' + p.tags[t] + '</span> ';
+                // recommend_tags is admin-editable in the financing_plan sheet —
+                // always escape before injecting via innerHTML.
+                var tagSource = p.tags || (p.plan && p.plan.recommend_tags);
+                if (tagSource) {
+                    var tagArr = Array.isArray(tagSource) ? tagSource : String(tagSource).split(',');
+                    for (var t = 0; t < tagArr.length; t++) {
+                        var tagLabel = String(tagArr[t]).trim();
+                        if (!tagLabel) continue;
+                        tags += '<span class="roi-badge roi-badge-fit">' + _esc(tagLabel) + '</span> ';
                     }
                 }
 
@@ -3123,7 +3138,7 @@
             if (cards[idx]) cards[idx].classList.add('selected');
             document.getElementById('roi_btnToPresent').disabled = false;
 
-            // Presentation will be fully rendered when step 7 is shown
+            // Presentation will be fully rendered when the summary step is shown
             roiScheduleAutoSave();
             roiScheduleAutoSave();
         }
@@ -3369,16 +3384,22 @@
                 document.getElementById('roi_presHintWrap').style.display = 'none';
             }
 
-            // Generate Sales Script
+            // Generate Sales Script. product.* and plan.* fields are
+            // admin-editable in the Sheet — escape every interpolation that
+            // touches sheet-backed strings/numbers before injecting via
+            // innerHTML below.
             var scriptEl = document.getElementById('roi_presSalesScript');
             if (scriptEl) {
+                var kwLabel = Number(product.kw) || Number(product.kWp) || 0;
+                var battLabel = Number(product.battery_kwh) || 0;
+                var bankLabelScript = plan.bank_label_th || plan.bank_code || 'ธนาคาร';
                 var scriptHtml = 'จากค่าไฟปัจจุบันประมาณ <strong>' + Math.round(bd.currentBillMo).toLocaleString() + ' บาท/เดือน</strong> ';
-                scriptHtml += 'ถ้าติดตั้งระบบขนาด <strong>' + (product.kw || product.kWp || 0) + ' kWp</strong> ';
-                if (bd.hasBattery) scriptHtml += 'พร้อมแบตเตอรี่ <strong>' + product.battery_kwh + ' kWh</strong> ';
+                scriptHtml += 'ถ้าติดตั้งระบบขนาด <strong>' + kwLabel + ' kWp</strong> ';
+                if (bd.hasBattery) scriptHtml += 'พร้อมแบตเตอรี่ <strong>' + battLabel + ' kWh</strong> ';
                 scriptHtml += '<br>จะช่วยประหยัดค่าไฟได้เดือนละ <strong>' + Math.round(bd.totalSavingMo).toLocaleString() + ' บาท</strong> ';
                 if (bd.includeFit && bd.fitIncomeMo > 0) scriptHtml += '(รวมรายได้จากการขายไฟคืนการไฟฟ้าแล้ว) ';
-                
-                scriptHtml += '<br>โดยลูกค้าสามารถเลือกผ่อนกับ <strong>' + (plan.bank_label_th || plan.bank_code || 'ธนาคาร') + '</strong> ';
+
+                scriptHtml += '<br>โดยลูกค้าสามารถเลือกผ่อนกับ <strong>' + _esc(bankLabelScript) + '</strong> ';
                 scriptHtml += 'เพียงเดือนละ <strong>' + Math.round(bd.installmentMo).toLocaleString() + ' บาท</strong> ';
                 
                 var od = Math.round(bd.outlayDelta);
