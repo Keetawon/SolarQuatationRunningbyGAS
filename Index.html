@@ -2273,7 +2273,6 @@
                             window.q_data.existingPdfUrl = d.pdfUrl;
                         }
                     } else {
-                        console.log('searchQuotationData returned:', d);
                         var detail = (d && d.error) ? d.error
                             : ('server returned ' + (d === null ? 'null' : typeof d) + ' — ตรวจสอบว่า Apps Script ได้อัปเดต Code.gs ล่าสุดแล้ว และมีฟังก์ชัน searchQuotationData');
                         alert("ไม่พบข้อมูล: " + detail);
@@ -2584,12 +2583,11 @@
                     }
                     roiSession = session;
                     roiRestoreSession(session);
-                    // Go to step 5 (comparison) or wherever the user left off
+                    // Resume at the furthest step the user had reached.
                     if (session.selected_product_id_fk) {
                         roiShowStep(6);
                     } else if (session.monthly_kwh || session.monthly_bill) {
-                        roiShowStep(5);
-                        roiCalcComparison();
+                        roiShowStep(4);
                     } else {
                         roiShowStep(1);
                     }
@@ -2647,10 +2645,12 @@
             roiSelectedPlanIdx = -1;
             roiComparisonResults = [];
             roiFinancingResults = [];
-            document.getElementById('roi_compareBody').innerHTML = '';
-            document.getElementById('roi_financeCards').innerHTML = '';
-            document.getElementById('roi_btnToFinance').disabled = true;
-            document.getElementById('roi_btnToPresent').disabled = true;
+            var financeCards = document.getElementById('roi_financeCards');
+            if (financeCards) financeCards.innerHTML = '';
+            var btnFin = document.getElementById('roi_btnToFinance');
+            if (btnFin) btnFin.disabled = true;
+            var btnPres = document.getElementById('roi_btnToPresent');
+            if (btnPres) btnPres.disabled = true;
             roiShowStep(1);
         }
 
@@ -3018,17 +3018,9 @@
             var selectedResult = roiComparisonResults[roiSelectedProductIdx];
             if (!selectedResult) return;
 
-            var loan = selectedResult.product.price * (1 - (parseFloat(document.getElementById('roi_downPercent').value) || 0) / 100);
+            var downPct = Number(session.selected_down_percent) || 0;
+            var loan = selectedResult.product.price * (1 - downPct / 100);
             var strategy = document.querySelector('input[name="roi_rankStrategy"]:checked').value;
-
-            console.log('[ROI Step 6] plans count:', (roiBootstrap.plans || []).length,
-                'tiers count:', (roiBootstrap.tiers || []).length,
-                'benchmarks:', (roiBootstrap.benchmarks || []).length,
-                'loan:', loan, 'downPct:', session.selected_down_percent,
-                'hasCollateral:', session.has_collateral, 'hasCreditCard:', session.has_credit_card);
-            if (roiBootstrap.plans && roiBootstrap.plans.length > 0) {
-                console.log('[ROI Step 6] first plan sample:', JSON.stringify(roiBootstrap.plans[0]).substring(0, 300));
-            }
 
             roiFinancingResults = RoiCalc.rankFinancingPlans(
                 loan,
@@ -3040,8 +3032,6 @@
                 session,
                 strategy
             );
-
-            console.log('[ROI Step 6] results:', roiFinancingResults ? roiFinancingResults.length : 0);
 
             var container = document.getElementById('roi_financeCards');
             var noResult = document.getElementById('roi_noFinanceResult');
@@ -3214,9 +3204,10 @@
                 obj.selected_price = selProd.price || 0;
                 obj.selected_battery_kwh = selProd.battery_kwh || selProd.batteryKwh || 0;
                 var selResult = roiComparisonResults[roiSelectedProductIdx];
-                obj.selected_payback_yr = selResult.payback || selResult.paybackYears || 0;
-                obj.selected_npv25 = selResult.npv || selResult.npv25 || 0;
-                obj.annual_saving_yr1 = selResult.saving || selResult.annualSaving || 0;
+                var selKpi = selResult.kpi || {};
+                obj.selected_payback_yr = selKpi.payback || 0;
+                obj.selected_npv25 = selKpi.npv || 0;
+                obj.annual_saving_yr1 = selKpi.annualSavingYr1 || 0;
             }
 
             // Selected plan
