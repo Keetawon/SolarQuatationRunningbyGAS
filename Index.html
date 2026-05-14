@@ -217,6 +217,35 @@
         .roi-badge-fast { background: #fff3e0; color: #e65100; }
         .roi-badge-fit { background: #e3f2fd; color: #1565c0; }
         #roi-helper { font-family: 'Krub', sans-serif; }
+        .roi-sticky-actionbar {
+            position: sticky;
+            bottom: 0;
+            background: rgba(255,255,255,0.94);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-top: 1px solid #e0e0e0;
+            padding: 12px 24px;
+            margin: 16px -24px -24px;
+            z-index: 20;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
+        }
+        .roi-sticky-actionbar .btn { min-width: 120px; }
+        @media (max-width: 576px) {
+            .roi-sticky-actionbar { padding: 10px 12px; margin: 12px -16px -16px; }
+            .roi-sticky-actionbar .btn { min-width: auto; padding: 6px 12px; font-size: 0.9rem; }
+        }
+        .roi-result-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--ocean-bg);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 0.88rem;
+        }
+        .roi-result-summary .pager-mini { display: flex; gap: 6px; align-items: center; }
+        .roi-result-summary .pager-mini .btn { padding: 2px 10px; font-size: 0.8rem; }
 
         /* Admin Tab */
         .admin-plan-row { cursor: pointer; transition: background 0.2s; }
@@ -830,12 +859,14 @@
                                 </div>
                             </div>
                         </div>
+                        <div id="roi_financeSummary" class="roi-result-summary d-none"></div>
                         <div id="roi_financeCards"></div>
                         <div id="roi_noFinanceResult" class="alert alert-warning d-none">
                             ไม่พบแผนไฟเนาซ์ที่เหมาะสม ลองปรับเงื่อนไข
                         </div>
-                        <div class="d-flex justify-content-between mt-4">
+                        <div class="d-flex justify-content-between align-items-center roi-sticky-actionbar">
                             <button class="btn btn-outline-ocean" onclick="roiShowStep(4)">&larr; ย้อนกลับ</button>
+                            <span id="roi_financeSelectedHint" class="text-muted small d-none d-md-inline">เลือกแผนจากรายการด้านบนเพื่อไปต่อ</span>
                             <button class="btn btn-ocean" id="roi_btnToPresent" onclick="roiShowStep(6)" disabled>เลือกแผนแล้ว &rarr; สรุป</button>
                         </div>
                     </div>
@@ -3254,7 +3285,9 @@
         function roiRenderFinanceCards(loan, session) {
             var container = document.getElementById('roi_financeCards');
             var noResult = document.getElementById('roi_noFinanceResult');
+            var summary = document.getElementById('roi_financeSummary');
             container.innerHTML = '';
+            if (summary) { summary.classList.add('d-none'); summary.innerHTML = ''; }
 
             if (!roiFinancingResults || roiFinancingResults.length === 0) {
                 noResult.classList.remove('d-none');
@@ -3268,6 +3301,25 @@
             var totalPages = Math.max(1, Math.ceil(roiFinancingResults.length / ROI_FINANCE_PAGE_SIZE));
             if (roiFinancePage >= totalPages) roiFinancePage = totalPages - 1;
             if (roiFinancePage < 0) roiFinancePage = 0;
+
+            // Top summary + mini-pager — visible from the moment the user lands
+            // on the cards, so they don't need to scroll to the bottom just to
+            // see how many results there are or to jump pages.
+            if (summary) {
+                summary.classList.remove('d-none');
+                var pagerHtml = '';
+                if (totalPages > 1) {
+                    pagerHtml =
+                        '<div class="pager-mini">' +
+                        '<button type="button" class="btn btn-sm btn-outline-ocean" onclick="roiFinancePrevPage()"' + (roiFinancePage === 0 ? ' disabled' : '') + '>&larr;</button>' +
+                        '<span class="text-muted">หน้า ' + (roiFinancePage + 1) + '/' + totalPages + '</span>' +
+                        '<button type="button" class="btn btn-sm btn-outline-ocean" onclick="roiFinanceNextPage()"' + (roiFinancePage >= totalPages - 1 ? ' disabled' : '') + '>&rarr;</button>' +
+                        '</div>';
+                }
+                summary.innerHTML =
+                    '<span><strong>' + roiFinancingResults.length + '</strong> แผน ที่ตรงเงื่อนไข</span>' +
+                    pagerHtml;
+            }
 
             var start = roiFinancePage * ROI_FINANCE_PAGE_SIZE;
             var end = Math.min(start + ROI_FINANCE_PAGE_SIZE, roiFinancingResults.length);
@@ -3393,16 +3445,30 @@
 
         function roiSelectPlan(idx) {
             roiSelectedPlanIdx = idx;
-            // Update card selection
+            // Update card selection. idx is the GLOBAL result index; cards in
+            // the DOM only contain the current page slice, so translate.
             var cards = document.querySelectorAll('.roi-finance-card');
             for (var i = 0; i < cards.length; i++) {
                 cards[i].classList.remove('selected');
             }
-            if (cards[idx]) cards[idx].classList.add('selected');
+            var domIdx = idx - (roiFinancePage * ROI_FINANCE_PAGE_SIZE);
+            if (cards[domIdx]) cards[domIdx].classList.add('selected');
             document.getElementById('roi_btnToPresent').disabled = false;
 
+            var hint = document.getElementById('roi_financeSelectedHint');
+            if (hint) {
+                var picked = roiFinancingResults[idx];
+                if (picked && picked.plan) {
+                    var pBank = picked.plan.bank_label_th || picked.plan.bank_name || '';
+                    var pProd = picked.plan.product_name_th || picked.plan.plan_name || '';
+                    // Leave d-none / d-md-inline classes alone — Bootstrap
+                    // already hides this on mobile so the two buttons keep
+                    // breathing room in the sticky bar.
+                    hint.textContent = '✓ เลือก: ' + (pBank + ' — ' + pProd).slice(0, 60);
+                }
+            }
+
             // Presentation will be fully rendered when the summary step is shown
-            roiScheduleAutoSave();
             roiScheduleAutoSave();
         }
 
