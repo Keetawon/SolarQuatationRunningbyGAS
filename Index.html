@@ -781,17 +781,17 @@
                                 <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="ค่าผ่อน/เดือน − เงินประหยัด/เดือน = เงินที่ลูกค้าควักจริงๆ ต่อเดือน ค่ายิ่งต่ำ (หรือติดลบ) ยิ่งดี — เหมาะสำหรับลูกค้าที่ดูเงินสดไหลออกเป็นหลัก">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankNet" value="net" checked onchange="roiCalcFinancing()">
-                                    <label class="form-check-label" for="roi_rankNet">Net Monthly (ต่ำสุด)</label>
+                                    <label class="form-check-label" for="roi_rankNet">จ่ายเพิ่มจริงต่ำสุด <small class="text-muted d-block" style="font-size:0.7rem;line-height:1.2">ค่าผ่อน − เงินประหยัด = เงินที่ต้องจ่ายเพิ่ม</small></label>
                                 </div>
                                 <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="อัตราดอกเบี้ยถัวเฉลี่ยตลอดอายุสัญญาต่ำสุด — เหมาะถ้าลูกค้าอยากได้ดอกเบี้ยถูกที่สุดโดยไม่สนใจค่าผ่อน/เดือน หรือกะจะปิดสัญญาก่อนกำหนด">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankRate" value="rate" onchange="roiCalcFinancing()">
-                                    <label class="form-check-label" for="roi_rankRate">ดอกเบี้ยต่ำสุด</label>
+                                    <label class="form-check-label" for="roi_rankRate">ดอกเบี้ยถัวเฉลี่ยต่ำสุด <small class="text-muted d-block" style="font-size:0.7rem;line-height:1.2">อัตราดอกเบี้ยเฉลี่ยตลอดสัญญา</small></label>
                                 </div>
                                 <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="ค่าผ่อนเดือนแรกต่ำสุด (ก่อนหักเงินประหยัด) — เหมาะกับลูกค้าที่ดู cashflow ออกตอนเริ่ม แม้ดอกเบี้ยรวมจะสูงกว่าก็ตาม">
                                     <input class="form-check-input" type="radio" name="roi_rankStrategy" id="roi_rankMonthly" value="monthly" onchange="roiCalcFinancing()">
-                                    <label class="form-check-label" for="roi_rankMonthly">ผ่อน/เดือนต่ำสุด</label>
+                                    <label class="form-check-label" for="roi_rankMonthly">ค่างวดต่ำสุด <small class="text-muted d-block" style="font-size:0.7rem;line-height:1.2">ค่าผ่อนเดือนแรก (ก่อนหักประหยัด)</small></label>
                                 </div>
                                 <div class="form-check form-check-inline" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="ผลรวมดอกเบี้ยตลอดสัญญาต่ำสุด — เหมาะกับลูกค้าที่ดูภาพรวมว่าจ่ายดอกเบี้ยทั้งหมดเท่าไหร่ ไม่สนใจว่าผ่อนเดือนละกี่บาท">
@@ -1425,8 +1425,8 @@
                           </div>
                           <div class="col-md-12">
                             <label class="form-label small fw-bold">ตัวเลือกสัดส่วนเงินดาวน์ (Down % Options)</label>
-                            <input type="text" id="ap_down_percent_options" class="form-control form-control-sm" placeholder="เช่น 0, 0.10, 0.20">
-                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุเป็นจุดทศนิยมและคั่นด้วยลูกน้ำ (ตัวอย่าง: 0 = ไม่ดาวน์, 0.10 = ดาวน์ 10%, 0.20 = ดาวน์ 20%)</small>
+                            <input type="text" id="ap_down_percent_options" class="form-control form-control-sm" placeholder="เช่น 0, 10, 20, 25">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุเป็น % คั่นด้วยลูกน้ำ (0 = ไม่ดาวน์, 10 = ดาวน์ 10%) หรือทศนิยม (0.10 = 10%) — ระบบรับทั้ง 2 แบบ</small>
                           </div>
                         </div>
                       </div>
@@ -1576,8 +1576,8 @@
                           </div>
                           <div class="col-md-6">
                             <label class="form-label small fw-bold">ใช้กับเงินดาวน์ (Down %)</label>
-                            <input type="text" id="at_applies_to_down_percent" class="form-control form-control-sm" placeholder="เช่น 0.10 หรือ * (ทั้งหมด)">
-                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุสัดส่วนทศนิยม หรือใส่ * หากใช้ได้กับทุกสัดส่วนดาวน์</small>
+                            <input type="text" id="at_applies_to_down_percent" class="form-control form-control-sm" placeholder="เช่น 0.10 หรือ 10 หรือ * (ทั้งหมด)">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ระบุทศนิยม (0.10) หรือ % (10) — ระบบรับทั้ง 2 แบบ หรือใส่ * ใช้ได้ทุกสัดส่วน</small>
                           </div>
                         </div>
                       </div>
@@ -1609,8 +1609,8 @@
                           </div>
                           <div class="col-md-4">
                             <label class="form-label small fw-bold">อัตราดอกเบี้ย (Rate Value)</label>
-                            <input type="number" id="at_rate_value" class="form-control form-control-sm" step="0.0001" placeholder="เช่น 0.0739">
-                            <small class="form-text text-muted" style="font-size: 0.75rem;">ตัวอย่าง: ดอกเบี้ย 7.39% ให้กรอก 0.0739</small>
+                            <input type="number" id="at_rate_value" class="form-control form-control-sm" step="0.0001" placeholder="เช่น 0.0739 หรือ 7.39">
+                            <small class="form-text text-muted" style="font-size: 0.75rem;">ดอกเบี้ย 7.39% กรอกเป็น 0.0739 (ทศนิยม) หรือ 7.39 (%) — ระบบ auto-detect ให้</small>
                           </div>
                           <div class="col-md-4">
                             <label class="form-label small fw-bold">ส่วนต่างดอกเบี้ยอ้างอิง</label>
@@ -3246,6 +3246,16 @@
                 var bankLabel = p.plan.bank_label_th || p.plan.bank_name || p.plan.bank || '-';
                 var productLabel = p.plan.product_name_th || p.plan.plan_name || p.plan.name || '-';
                 var termValue = p.term || p.termMonths || 0;
+                var rateDisplay = p.weightedRate ? (p.weightedRate * 100).toFixed(2) + '%' : '-';
+                var procFee = p.processingFee || 0;
+                var vatTotal = p.totalVat || 0;
+                var feeRow = '';
+                if (procFee > 0 || vatTotal > 0) {
+                    var feeParts = [];
+                    if (procFee > 0) feeParts.push('ค่าธรรมเนียม: ' + Math.round(procFee).toLocaleString() + ' บาท');
+                    if (vatTotal > 0) feeParts.push('VAT รวม: ' + Math.round(vatTotal).toLocaleString() + ' บาท');
+                    feeRow = '<div class="small text-muted mt-1 text-end" style="font-size:0.72rem;">' + feeParts.join(' | ') + '</div>';
+                }
                 card.innerHTML = '<div class="d-flex justify-content-between align-items-start">' +
                     '<div><strong>' + _esc(bankLabel) + ' - ' + _esc(productLabel) + '</strong> ' + tags + '</div>' +
                     '<div class="text-end"><span class="roi-hero-net" style="font-size:1.5rem;">' + Math.round(p.monthlyNet || 0).toLocaleString() + '</span><br><small class="text-muted">NET/เดือน (บาท)</small></div>' +
@@ -3254,9 +3264,11 @@
                     '<div class="row text-center">' +
                     '<div class="col"><small class="text-muted">ผ่อน/เดือน</small><br><strong>' + Math.round(p.firstInstallment || p.monthlyPayment || 0).toLocaleString() + '</strong></div>' +
                     '<div class="col"><small class="text-muted">ประหยัด/เดือน</small><br><strong class="text-success">' + Math.round(p.monthlySaving || 0).toLocaleString() + '</strong></div>' +
+                    '<div class="col"><small class="text-muted">ดอกเบี้ยเฉลี่ย</small><br><strong>' + rateDisplay + '</strong></div>' +
                     '<div class="col"><small class="text-muted">ดอกเบี้ยรวม</small><br><strong>' + Math.round(p.totalInterest || 0).toLocaleString() + '</strong></div>' +
                     '<div class="col"><small class="text-muted">ระยะเวลา</small><br><strong>' + termValue + ' เดือน</strong></div>' +
-                    '</div>';
+                    '</div>' +
+                    feeRow;
                 container.appendChild(card);
             }
         }
@@ -3269,17 +3281,22 @@
             var counts = { price: 0, down: 0, collat: 0, cc: 0 };
             roiBootstrap.plans.forEach(function (p) {
                 if (p.financing_type === 'cash') return;
-                if (Number(p.price_min) > loan || Number(p.price_max) < loan) { counts.price++; return; }
+                var pMin = Number(p.price_min) || 0;
+                var pMax = Number(p.price_max) || 0;
+                if ((pMin > 0 && pMin > loan) || (pMax > 0 && pMax < loan)) { counts.price++; return; }
                 var optionsStr = (p.down_percent_options || '').toString();
                 var parts = optionsStr.split(',').map(function (s) { return s.trim(); });
-                var downOk = parts.indexOf('*') !== -1;
+                var downOk = parts.indexOf('*') !== -1 || !optionsStr;
                 if (!downOk) {
+                    // Use >= min logic (same as engine)
+                    var minOption = Infinity;
                     for (var i = 0; i < parts.length; i++) {
                         var n = parseFloat(parts[i]);
                         if (isNaN(n)) continue;
                         var pct = n <= 1 ? n * 100 : n;
-                        if (Math.abs(pct - downPct) < 0.5) { downOk = true; break; }
+                        if (pct < minOption) minOption = pct;
                     }
+                    downOk = downPct >= minOption - 0.5;
                 }
                 if (!downOk) { counts.down++; return; }
                 if (!hasCollateral && (p.requires_collateral === true || p.requires_collateral === 'TRUE')) { counts.collat++; return; }
@@ -3902,7 +3919,12 @@
                         tiersHtml += '<tr class="admin-tier-row">' +
                             '<td>' + _esc(tr.tier_id) + '</td>' +
                             '<td>' + _esc(tr.applies_to_term_months || '*') + '</td>' +
-                            '<td>' + _esc(tr.applies_to_down_percent || '*') + '</td>' +
+                            '<td>' + (function(d) {
+                                if (!d || d === '*') return '*';
+                                var n = parseFloat(d);
+                                if (isNaN(n)) return _esc(d);
+                                return (n <= 1 ? (n * 100) : n) + '%';
+                            })(tr.applies_to_down_percent) + '</td>' +
                             '<td>' + _esc(tr.from_month || 0) + '-' + _esc(tr.to_month || 0) + '</td>' +
                             '<td>' + rateDisplay + '</td>' +
                             '<td>' + _esc(tr.sequence) + '</td>' +

@@ -170,16 +170,18 @@ var RoiCalc = (function () {
   // ==================== Installment Schedule ====================
 
   function calcInstallmentSchedule(principal, plan, tiers, termMonths, downPct, benchmarks) {
-    var loan = principal * (1 - (downPct || 0));
+    // NOTE: principal is already the post-down-payment loan amount.
+    // downPct is used only for tier filtering, NOT for reducing principal again.
+    var loan = principal;
     if (loan <= 0 || termMonths <= 0) {
-      return { schedule: [], totalInterest: 0, avgInstallment: 0, monthlyPayments: [] };
+      return { schedule: [], totalInterest: 0, avgInstallment: 0, monthlyPayments: [], totalFees: 0 };
     }
 
     var planTiers = _filterTiers(tiers, plan.plan_id, termMonths, downPct);
     if (plan.rate_type === 'flat') {
-      return _calcFlatSchedule(loan, planTiers, termMonths, benchmarks);
+      return _calcFlatSchedule(loan, planTiers, termMonths, benchmarks, plan);
     } else {
-      return _calcReducingSchedule(loan, planTiers, termMonths, benchmarks);
+      return _calcReducingSchedule(loan, planTiers, termMonths, benchmarks, plan);
     }
   }
 
@@ -195,32 +197,67 @@ var RoiCalc = (function () {
 
   function _filterTiers(tiers, planId, termMonths, downPct) {
     var targetPct = _normalizeDownPct(downPct);
-    return tiers.filter(function (t) {
+
+    // Step 1: filter by planId and term
+    var planTermTiers = tiers.filter(function (t) {
       if (t.plan_id !== planId) return false;
       var terms = t.applies_to_term_months.toString().split(',');
       if (terms.indexOf('*') === -1 && terms.indexOf(String(termMonths)) === -1) return false;
+      return true;
+    });
+
+    // Step 2: for down%, use "closest match <= target" logic.
+    // If tier has '*' for down → always include.
+    // If tier has specific down% values → include the one closest to (but <=) user's down%.
+    var wildcardTiers = [];
+    var specificTiers = [];
+    planTermTiers.forEach(function (t) {
       var downs = t.applies_to_down_percent.toString().split(',');
-      if (downs.indexOf('*') !== -1) return true;
-      var downMatch = downs.some(function (d) {
-        var dp = _normalizeDownPct(d);
-        return !isNaN(dp) && Math.abs(dp - targetPct) < 0.5;
+      if (downs.indexOf('*') !== -1) {
+        wildcardTiers.push(t);
+      } else {
+        // Find the closest down option in this tier that's <= target
+        var bestDist = Infinity;
+        downs.forEach(function (d) {
+          var dp = _normalizeDownPct(d);
+          if (!isNaN(dp) && dp <= targetPct + 0.5) {
+            var dist = targetPct - dp;
+            if (dist < bestDist) bestDist = dist;
+          }
+        });
+        if (bestDist < Infinity) {
+          specificTiers.push({ tier: t, dist: bestDist });
+        }
+      }
+    });
+
+    // If we have specific-down tiers, pick those with the closest down%
+    var result = wildcardTiers.slice();
+    if (specificTiers.length > 0) {
+      var minDist = Math.min.apply(null, specificTiers.map(function (s) { return s.dist; }));
+      specificTiers.forEach(function (s) {
+        if (s.dist <= minDist + 0.5) result.push(s.tier);
       });
-      return downMatch;
-    }).sort(function (a, b) { return a.from_month - b.from_month; });
+    }
+
+    return result.sort(function (a, b) { return a.from_month - b.from_month; });
   }
 
   function _resolveTierRate(tier, benchmarks) {
     if (tier.rate_value && tier.rate_value !== '' && Number(tier.rate_value) !== 0) {
-      return Number(tier.rate_value);
+      var rate = Number(tier.rate_value);
+      // Auto-normalize: if rate > 1, it's in percent form (e.g. 7.39) → convert to fraction
+      if (rate > 1) rate = rate / 100;
+      return rate;
     }
     if (tier.reference_offset !== undefined && tier.reference_offset !== null && tier.reference_offset !== '') {
       var offset = Number(tier.reference_offset);
       // resolve benchmark — try to find MRR/MLR from benchmarks
-      var refCode = 'MRR'; // default
       for (var i = 0; i < benchmarks.length; i++) {
         var bm = benchmarks[i];
         if (bm.benchmark_code) {
           var val = Number(bm.value) || 0;
+          if (val > 1) val = val / 100;
           return val + offset;
         }
       }
@@ -229,10 +266,17 @@ var RoiCalc = (function () {
     return 0;
   }
 
-  function _calcFlatSchedule(loan, tiers, termMonths, benchmarks) {
+  function _calcFlatSchedule(loan, tiers, termMonths, benchmarks, plan) {
     var schedule = [];
     var totalInterest = 0;
+    var totalVat = 0;
     var principalPerMonth = loan / termMonths;
+
+    // Determine if VAT applies (personal_loan, home_equity — not credit card)
+    var ftype = plan ? (plan.financing_type || '') : '';
+    var applyVat = (ftype === 'personal_loan' || ftype === 'home_equity');
+    var vatRate = applyVat ? 0.07 : 0;
+    var monthlyFee = Number(plan && plan.monthly_fee) || 0;
 
     if (tiers.length === 0) {
       // no tiers — treat as 0% interest
@@ -241,7 +285,9 @@ var RoiCalc = (function () {
           month: m,
           principal: principalPerMonth,
           interest: 0,
-          installment: principalPerMonth
+          vat: 0,
+          fee: monthlyFee,
+          installment: principalPerMonth + monthlyFee
         });
       }
     } else {
@@ -251,12 +297,16 @@ var RoiCalc = (function () {
         var tier = _findTierForMonth(m, sorted);
         var r = tier ? _resolveTierRate(tier, benchmarks) : 0;
         var interestPerMonth = loan * r / 12;
-        var installment = principalPerMonth + interestPerMonth;
+        var vatAmount = interestPerMonth * vatRate;
+        var installment = principalPerMonth + interestPerMonth + vatAmount + monthlyFee;
         totalInterest += interestPerMonth;
+        totalVat += vatAmount;
         schedule.push({
           month: m,
           principal: principalPerMonth,
           interest: interestPerMonth,
+          vat: vatAmount,
+          fee: monthlyFee,
           installment: installment
         });
       }
@@ -269,21 +319,31 @@ var RoiCalc = (function () {
     return {
       schedule: schedule,
       totalInterest: totalInterest,
+      totalVat: totalVat,
+      totalFees: monthlyFee * termMonths,
       avgInstallment: avgInstallment
     };
   }
 
-  function _calcReducingSchedule(loan, tiers, termMonths, benchmarks) {
+  function _calcReducingSchedule(loan, tiers, termMonths, benchmarks, plan) {
     var schedule = [];
     var balance = loan;
     var totalInterest = 0;
+    var totalVat = 0;
     var sorted = tiers.slice().sort(function (a, b) { return a.from_month - b.from_month; });
+
+    // Determine if VAT applies
+    var ftype = plan ? (plan.financing_type || '') : '';
+    var applyVat = (ftype === 'personal_loan' || ftype === 'home_equity');
+    var vatRate = applyVat ? 0.07 : 0;
+    var monthlyFee = Number(plan && plan.monthly_fee) || 0;
 
     for (var m = 1; m <= termMonths; m++) {
       var tier = _findTierForMonth(m, sorted);
       var annualRate = tier ? _resolveTierRate(tier, benchmarks) : 0;
       var monthlyRate = annualRate / 12;
       var interest = balance * monthlyRate;
+      var vatAmount = interest * vatRate;
 
       // remaining months at this rate tier
       var remainingInTier = tier ? (tier.to_month - m + 1) : (termMonths - m + 1);
@@ -304,12 +364,18 @@ var RoiCalc = (function () {
       balance -= principalPaid;
       if (balance < 0) balance = 0;
       totalInterest += interest;
+      totalVat += vatAmount;
+
+      // Add VAT + fee to installment for display
+      var fullInstallment = installment + vatAmount + monthlyFee;
 
       schedule.push({
         month: m,
         principal: principalPaid,
         interest: interest,
-        installment: installment,
+        vat: vatAmount,
+        fee: monthlyFee,
+        installment: fullInstallment,
         balance: balance
       });
     }
@@ -321,6 +387,8 @@ var RoiCalc = (function () {
     return {
       schedule: schedule,
       totalInterest: totalInterest,
+      totalVat: totalVat,
+      totalFees: monthlyFee * termMonths,
       avgInstallment: avgInstallment
     };
   }
@@ -446,8 +514,11 @@ var RoiCalc = (function () {
     // wantTaxDeduction is a SOFT preference handled in sort below, not a filter.
     var feasible = plans.filter(function (plan) {
       if (plan.financing_type === 'cash') return false;
-      if (Number(plan.price_min) > loan) return false;
-      if (Number(plan.price_max) < loan) return false;
+      // price_min/max: 0 or empty = no limit
+      var pMin = Number(plan.price_min) || 0;
+      var pMax = Number(plan.price_max) || 0;
+      if (pMin > 0 && pMin > loan) return false;
+      if (pMax > 0 && pMax < loan) return false;
       if (!_matchesDownOption(plan.down_percent_options, downPct)) return false;
       if (!hasCollateral && (plan.requires_collateral === true || plan.requires_collateral === 'TRUE')) return false;
       if (!hasCreditCard && (plan.requires_credit_card_of_bank === true || plan.requires_credit_card_of_bank === 'TRUE')) return false;
@@ -473,6 +544,7 @@ var RoiCalc = (function () {
         // weighted avg rate
         var weightedRate = _calcWeightedAvgRate(plan, tiers, term, downPct, benchmarks);
 
+        var processingFee = Number(plan.processing_fee) || 0;
         var taxOffered = plan.tax_deduction_eligible === true || plan.tax_deduction_eligible === 'TRUE';
         candidates.push({
           plan: plan,
@@ -481,6 +553,9 @@ var RoiCalc = (function () {
           firstInstallment: firstInstallment,
           avgInstallment: result.avgInstallment,
           totalInterest: result.totalInterest,
+          totalVat: result.totalVat || 0,
+          totalFees: (result.totalFees || 0) + processingFee,
+          processingFee: processingFee,
           monthlyNet: monthlyNet,
           monthlySaving: monthlySaving,
           weightedRate: weightedRate,
@@ -520,19 +595,23 @@ var RoiCalc = (function () {
   }
 
   // Match a UI down-payment percent (0-100 integer) against a plan's
-  // down_percent_options column. See _normalizeDownPct for the
-  // fraction-vs-percent convention.
+  // down_percent_options column. Uses ">= minimum" logic:
+  // If plan offers [0, 10, 20], user picking 15% is OK (>= min of 0).
+  // Credit card with options=[0] works for any down% because min=0.
   function _matchesDownOption(rawOptions, downPct) {
     if (rawOptions === undefined || rawOptions === null || rawOptions === '') return true;
     var parts = rawOptions.toString().split(',').map(function (s) { return s.trim(); });
     if (parts.indexOf('*') !== -1) return true;
     var target = _normalizeDownPct(downPct);
     if (isNaN(target)) return false;
+    // Find minimum down% option the plan supports
+    var minOption = Infinity;
     for (var i = 0; i < parts.length; i++) {
       var asPct = _normalizeDownPct(parts[i]);
-      if (!isNaN(asPct) && Math.abs(asPct - target) < 0.5) return true;
+      if (!isNaN(asPct) && asPct < minOption) minOption = asPct;
     }
-    return false;
+    // User's down% must be >= plan's minimum requirement
+    return target >= minOption - 0.5;
   }
 
   function _calcWeightedAvgRate(plan, tiers, termMonths, downPct, benchmarks) {
