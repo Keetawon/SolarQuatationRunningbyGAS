@@ -748,7 +748,7 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-3">
                                 <div class="form-check form-switch" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="เปิดเมื่อลูกค้าอยากเอาดอกเบี้ยไปลดหย่อนภาษีปลายปี — สินเชื่อบ้าน (HE) เท่านั้นที่ลดหย่อนได้ ระบบจะดันแผน HE ขึ้นมาก่อน ไม่ใช่ตัวกรองเข้ม-ตัดทิ้ง">
+                                     title="เปิดเมื่อลูกค้าอยากเอาดอกเบี้ยไปลดหย่อนภาษีปลายปี — ระบบจะแสดงเฉพาะแผนสินเชื่อบ้าน (Home Equity) เท่านั้น (BBL/KTB/KBANK/GHB) เพราะมีแค่ HE ที่กรมสรรพากรให้ลดหย่อนได้ (สูงสุด 200,000 บาท)">
                                     <input class="form-check-input" type="checkbox" id="roi_wantTaxDeduct" onchange="roiCalcFinancing()">
                                     <label class="form-check-label" for="roi_wantTaxDeduct">ต้องการลดหย่อนภาษี</label>
                                 </div>
@@ -773,6 +773,36 @@
                                     เงินดาวน์ (%)
                                 </label>
                                 <input type="number" id="roi_downPercent" class="form-control" value="0" min="0" max="100" step="5" oninput="roiCalcFinancing()">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold" data-bs-toggle="tooltip" data-bs-placement="top"
+                                       title="กรองตามระยะผ่อน — สั้น (≤12 ด.) คือบัตรเครดิต / กลาง (24-60 ด.) คือ personal loan / ยาว (72-84 ด.) คือ personal loan แบบยืดเวลา / ระยะยาว (≥120 ด.) คือสินเชื่อบ้าน HE">
+                                    ระยะผ่อน
+                                </label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="roi_termBand" id="roi_termAll" value="" checked onchange="roiCalcFinancing()">
+                                        <label class="form-check-label" for="roi_termAll">ทุกระยะ</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="roi_termBand" id="roi_termShort" value="short" onchange="roiCalcFinancing()">
+                                        <label class="form-check-label" for="roi_termShort">สั้น <small class="text-muted">(≤12 ด.)</small></label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="roi_termBand" id="roi_termMid" value="mid" onchange="roiCalcFinancing()">
+                                        <label class="form-check-label" for="roi_termMid">กลาง <small class="text-muted">(24-60 ด.)</small></label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="roi_termBand" id="roi_termLong" value="long" onchange="roiCalcFinancing()">
+                                        <label class="form-check-label" for="roi_termLong">ยาว <small class="text-muted">(72-84 ด.)</small></label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="roi_termBand" id="roi_termXLong" value="xlong" onchange="roiCalcFinancing()">
+                                        <label class="form-check-label" for="roi_termXLong">ระยะยาว <small class="text-muted">(≥120 ด. - HE)</small></label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -2445,6 +2475,8 @@
         var roiSelectedProductIdx = -1;
         var roiFinancingResults = [];
         var roiSelectedPlanIdx = -1;
+        var roiFinancePage = 0;
+        var ROI_FINANCE_PAGE_SIZE = 10;
         var roiSplitMode = 'default';
 
         // Initialize tooltips on the ROI tab
@@ -2677,6 +2709,7 @@
             roiSelectedPlanIdx = -1;
             roiComparisonResults = [];
             roiFinancingResults = [];
+            roiFinancePage = 0;
             var financeCards = document.getElementById('roi_financeCards');
             if (financeCards) financeCards.innerHTML = '';
             var btnPres = document.getElementById('roi_btnToPresent');
@@ -3208,21 +3241,38 @@
                 session,
                 strategy
             );
+            // Reset to page 1 whenever the filter / sort changes — otherwise
+            // a user who paged deep then flips a toggle would silently land
+            // on an empty page.
+            roiFinancePage = 0;
+            roiRenderFinanceCards(loan, session);
+        }
 
+        // Pure render — driven by roiFinancingResults + roiFinancePage. Pager
+        // buttons can call this without re-running rankFinancingPlans (which
+        // would reset the page).
+        function roiRenderFinanceCards(loan, session) {
             var container = document.getElementById('roi_financeCards');
             var noResult = document.getElementById('roi_noFinanceResult');
             container.innerHTML = '';
 
             if (!roiFinancingResults || roiFinancingResults.length === 0) {
                 noResult.classList.remove('d-none');
-                noResult.innerHTML = roiBuildEmptyFinanceReason(loan, session);
+                noResult.innerHTML = roiBuildEmptyFinanceReason(loan || 0, session || roiGetSessionObj());
                 return;
             }
             noResult.classList.add('d-none');
 
-            var top5 = roiFinancingResults.slice(0, 5);
-            for (var i = 0; i < top5.length; i++) {
-                var p = top5[i];
+            // Clamp the current page back into range whenever the filter
+            // shrinks the result set.
+            var totalPages = Math.max(1, Math.ceil(roiFinancingResults.length / ROI_FINANCE_PAGE_SIZE));
+            if (roiFinancePage >= totalPages) roiFinancePage = totalPages - 1;
+            if (roiFinancePage < 0) roiFinancePage = 0;
+
+            var start = roiFinancePage * ROI_FINANCE_PAGE_SIZE;
+            var end = Math.min(start + ROI_FINANCE_PAGE_SIZE, roiFinancingResults.length);
+            for (var i = start; i < end; i++) {
+                var p = roiFinancingResults[i];
                 var card = document.createElement('div');
                 card.className = 'roi-finance-card' + (roiSelectedPlanIdx === i ? ' selected' : '');
                 card.onclick = (function (idx) {
@@ -3230,6 +3280,8 @@
                 })(i);
 
                 var tags = '';
+                // Only the very first plan across the whole result set gets
+                // the "แนะนำ" badge — the on-page index would be misleading.
                 if (i === 0) tags += '<span class="roi-badge roi-badge-best">แนะนำ</span> ';
                 // recommend_tags is admin-editable in the financing_plan sheet —
                 // always escape before injecting via innerHTML.
@@ -3270,6 +3322,33 @@
                     '</div>' +
                     feeRow;
                 container.appendChild(card);
+            }
+
+            // Pager — only show when there's more than one page so single-page
+            // results stay clean.
+            if (totalPages > 1) {
+                var pager = document.createElement('div');
+                pager.className = 'd-flex justify-content-between align-items-center mt-3';
+                pager.innerHTML =
+                    '<button type="button" class="btn btn-sm btn-outline-ocean" onclick="roiFinancePrevPage()"' + (roiFinancePage === 0 ? ' disabled' : '') + '>&larr; ก่อนหน้า</button>' +
+                    '<span class="text-muted small">หน้า ' + (roiFinancePage + 1) + ' / ' + totalPages + ' (ทั้งหมด ' + roiFinancingResults.length + ' แผน)</span>' +
+                    '<button type="button" class="btn btn-sm btn-outline-ocean" onclick="roiFinanceNextPage()"' + (roiFinancePage >= totalPages - 1 ? ' disabled' : '') + '>ถัดไป &rarr;</button>';
+                container.appendChild(pager);
+            }
+        }
+
+        function roiFinancePrevPage() {
+            if (roiFinancePage > 0) {
+                roiFinancePage--;
+                roiRenderFinanceCards();
+            }
+        }
+
+        function roiFinanceNextPage() {
+            var totalPages = Math.ceil(roiFinancingResults.length / ROI_FINANCE_PAGE_SIZE);
+            if (roiFinancePage < totalPages - 1) {
+                roiFinancePage++;
+                roiRenderFinanceCards();
             }
         }
 
@@ -3370,6 +3449,7 @@
                 existing_solar: !!(document.getElementById('roi_existingSolar') && document.getElementById('roi_existingSolar').checked),
                 selected_rank_strategy: rankStrategy ? rankStrategy.value : 'net',
                 selected_down_percent: parseFloat(document.getElementById('roi_downPercent').value) || 0,
+                term_band: (function () { var el = document.querySelector('input[name="roi_termBand"]:checked'); return el ? el.value : ''; })(),
                 want_tax_deduction: !!(document.getElementById('roi_wantTaxDeduct') && document.getElementById('roi_wantTaxDeduct').checked),
                 has_collateral: !!(document.getElementById('roi_hasCollateral') && document.getElementById('roi_hasCollateral').checked),
                 has_credit_card: !!(document.getElementById('roi_hasCreditCard') && document.getElementById('roi_hasCreditCard').checked),

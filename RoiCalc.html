@@ -476,9 +476,14 @@ var RoiCalc = (function () {
   function _mergeProductInputs(inputs, product) {
     var merged = {};
     for (var k in inputs) merged[k] = inputs[k];
-    merged.kWp = Number(product.kw) || 0;
+    // Sheet column header in solar_products is "kWp" (the canonical SI unit)
+    // but earlier code paths used .kw. Accept any casing to keep the
+    // calculator working regardless of which sheet template the admin
+    // imported — without this fallback solarDaily comes out as 0 and the
+    // entire savings calculation collapses to zero.
+    merged.kWp = Number(product.kw || product.kWp || product.kwp) || 0;
     merged.price = Number(product.price) || 0;
-    merged.batteryKwh = Number(product.battery_kwh) || 0;
+    merged.batteryKwh = Number(product.battery_kwh || product.batteryKwh) || 0;
     merged.productId = product.product_id;
     merged.productName = product.name || '';
     merged.productPhase = product.electric_phase || '1';
@@ -510,8 +515,11 @@ var RoiCalc = (function () {
     var hasCollateral = session.has_collateral || false;
     var hasCreditCard = session.has_credit_card || false;
 
-    // filter feasible plans — only HARD prerequisites here.
-    // wantTaxDeduction is a SOFT preference handled in sort below, not a filter.
+    // filter feasible plans — HARD prerequisites only. wantTaxDeduction is
+    // also hard when the toggle is ON: surfacing non-eligible plans (e.g.
+    // ICBC personal loan) under a tax-deduction search caused sales reps to
+    // mis-quote eligibility to customers. Only home_equity products
+    // currently qualify for the Thai solar tax deduction.
     var feasible = plans.filter(function (plan) {
       if (plan.financing_type === 'cash') return false;
       // price_min/max: 0 or empty = no limit
@@ -522,6 +530,7 @@ var RoiCalc = (function () {
       if (!_matchesDownOption(plan.down_percent_options, downPct)) return false;
       if (!hasCollateral && (plan.requires_collateral === true || plan.requires_collateral === 'TRUE')) return false;
       if (!hasCreditCard && (plan.requires_credit_card_of_bank === true || plan.requires_credit_card_of_bank === 'TRUE')) return false;
+      if (wantTaxDeduction && !(plan.tax_deduction_eligible === true || plan.tax_deduction_eligible === 'TRUE')) return false;
       return true;
     });
 
@@ -545,7 +554,6 @@ var RoiCalc = (function () {
         var weightedRate = _calcWeightedAvgRate(plan, tiers, term, downPct, benchmarks);
 
         var processingFee = Number(plan.processing_fee) || 0;
-        var taxOffered = plan.tax_deduction_eligible === true || plan.tax_deduction_eligible === 'TRUE';
         candidates.push({
           plan: plan,
           term: term,
@@ -559,8 +567,7 @@ var RoiCalc = (function () {
           monthlyNet: monthlyNet,
           monthlySaving: monthlySaving,
           weightedRate: weightedRate,
-          schedule: result.schedule,
-          taxBonus: (wantTaxDeduction && taxOffered) ? 1 : 0
+          schedule: result.schedule
         });
       }
     });
@@ -585,13 +592,29 @@ var RoiCalc = (function () {
       default:
         primary = function (x) { return x.monthlyNet; };
     }
-    // Stable two-key sort: taxBonus first (plans matching the soft tax
-    // preference rank ahead), then the chosen strategy.
-    candidates.sort(function (a, b) {
-      if (a.taxBonus !== b.taxBonus) return b.taxBonus - a.taxBonus;
-      return primary(a) - primary(b);
-    });
-    return candidates.slice(0, 5);
+    // Apply the user's term-band filter if set. termBand is a string like
+    // "short" / "mid" / "long" / "xlong" or null = ทุกระยะ.
+    var termBand = session.term_band || null;
+    if (termBand) {
+      candidates = candidates.filter(function (c) { return _termInBand(c.term, termBand); });
+    }
+    candidates.sort(function (a, b) { return primary(a) - primary(b); });
+    // Return all candidates; the UI handles pagination + slicing.
+    return candidates;
+  }
+
+  // Map a term in months to a named band. Bands are chosen to match the
+  // financing types in the sheet: CC = ≤12mo, personal loan = 24-84mo,
+  // home equity = 120-240mo. Anything in between still resolves to a band.
+  function _termInBand(termMonths, band) {
+    var m = Number(termMonths) || 0;
+    switch (band) {
+      case 'short':  return m >= 1   && m <= 12;
+      case 'mid':    return m >= 24  && m <= 60;
+      case 'long':   return m >= 72  && m <= 84;
+      case 'xlong':  return m >= 120;
+      default:       return true;
+    }
   }
 
   // Match a UI down-payment percent (0-100 integer) against a plan's
