@@ -661,9 +661,11 @@
                             </div>
 
                             <div class="col-md-6 mt-3">
-                                <div class="form-check form-switch p-3 border rounded shadow-sm h-100" data-bs-toggle="tooltip" data-bs-placement="top" title="ขายไฟส่วนเกินคืนให้การไฟฟ้า">
-                                    <input class="form-check-input" type="checkbox" id="roi_includeFit" onchange="roiScheduleAutoSave()" style="margin-left: -2em; margin-right: 0.5em;">
-                                    <label class="form-check-label fw-bold" for="roi_includeFit">รวม FIT (เข้าร่วมโครงการขายไฟคืน)</label>
+                                <div class="d-flex align-items-center gap-2 p-3 border rounded shadow-sm h-100" data-bs-toggle="tooltip" data-bs-placement="top" title="ขายไฟส่วนเกินคืนให้การไฟฟ้า ผ่านโครงการ Feed-in Tariff (FIT) — ราคารับซื้อปัจจุบัน ~2.2 บาท/หน่วย">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="roi_includeFit" onchange="roiScheduleAutoSave()">
+                                    </div>
+                                    <label class="form-check-label fw-bold mb-0" for="roi_includeFit">รวม FIT (เข้าร่วมโครงการขายไฟคืน)</label>
                                 </div>
                             </div>
 
@@ -687,20 +689,47 @@
                                     <div class="card card-body bg-light">
                                         <div class="row g-3">
                                             <div class="col-md-3">
-                                                <label class="form-label">PSH (ชม./วัน)</label>
+                                                <label class="form-label fw-bold">PSH (ชม./วัน)</label>
                                                 <input type="number" id="roi_psh" class="form-control form-control-sm" value="4.5" step="0.1" min="1" max="8" oninput="roiScheduleAutoSave()">
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">Peak Sun Hours — ชั่วโมงแสงแดดเต็มที่ต่อวัน (ไทยเฉลี่ย 4-5 ชม.)</small>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label">Performance Ratio</label>
+                                                <label class="form-label fw-bold">Performance Ratio</label>
                                                 <input type="number" id="roi_pr" class="form-control form-control-sm" value="0.85" step="0.01" min="0.5" max="1" oninput="roiScheduleAutoSave()">
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">ประสิทธิภาพรวมระบบ (ค่ามาตรฐาน 0.80-0.85 รวมการสูญเสียจากสาย/inverter/ความร้อน)</small>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label">Degradation (%/ปี)</label>
+                                                <label class="form-label fw-bold">Degradation (%/ปี)</label>
                                                 <input type="number" id="roi_degradation" class="form-control form-control-sm" value="0.5" step="0.1" min="0" max="2" oninput="roiScheduleAutoSave()">
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">อัตราเสื่อมของแผงโซลาร์ต่อปี (แผง Tier 1 ≈ 0.5% ส่วนแบตจะเสื่อมแยกตามอายุ)</small>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label">Escalation (%/ปี)</label>
+                                                <label class="form-label fw-bold">Escalation (%/ปี)</label>
                                                 <input type="number" id="roi_escalation" class="form-control form-control-sm" value="3" step="0.5" min="0" max="10" oninput="roiScheduleAutoSave()">
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">อัตราค่าไฟที่คาดว่าจะเพิ่มขึ้นต่อปี (ย้อนหลัง 10 ปี ≈ 2-4%)</small>
+                                            </div>
+                                        </div>
+                                        <hr class="my-3">
+                                        <p class="fw-bold mb-2" style="color: var(--ocean-dark);">🔋 แบตเตอรี่ (เฉพาะเมื่อมีแบตเตอรี่)</p>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold">อายุแบตเตอรี่ (ปี)</label>
+                                                <input type="number" id="roi_batteryLife" class="form-control form-control-sm" value="10" step="1" min="5" max="20" oninput="roiScheduleAutoSave()">
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">แบตลิเธียมทั่วไป 10-15 ปี, LFP อาจถึง 15-20 ปี</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex align-items-center gap-2 mt-4">
+                                                    <div class="form-check form-switch mb-0">
+                                                        <input class="form-check-input" type="checkbox" id="roi_includeBattReplace" onchange="roiScheduleAutoSave()">
+                                                    </div>
+                                                    <label class="form-check-label fw-bold mb-0" for="roi_includeBattReplace">รวมค่าเปลี่ยนแบตเตอรี่</label>
+                                                </div>
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">คิดค่าเปลี่ยนแบตเมื่อถึงอายุใช้งาน เพื่อความครบถ้วน (ปิดเพื่อแสดงราคาที่ดูดีกว่า)</small>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold">ราคาแบต (บาท/kWh)</label>
+                                                <input type="number" id="roi_batteryReplaceCost" class="form-control form-control-sm" value="8000" step="500" min="0" oninput="roiScheduleAutoSave()">
+                                                <small class="form-text text-muted" style="font-size: 0.7rem;">ราคาเปลี่ยนแบตต่อ kWh (ปี 2025 ~8,000-12,000 บ.) แนวโน้มลดลง</small>
                                             </div>
                                         </div>
                                     </div>
@@ -709,7 +738,7 @@
                         </div>
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-outline-ocean" onclick="roiShowStep(3)">&larr; ย้อนกลับ</button>
-                            <button class="btn btn-ocean" id="roi_btnToFinance" onclick="roiProcessCustomSystem(); roiShowStep(5)">ถัดไป &rarr; สินเชื่อ</button>
+                            <button class="btn btn-ocean" id="roi_btnToFinance" onclick="roiGoToFinancing()">ถัดไป &rarr; สินเชื่อ</button>
                         </div>
                     </div>
 
@@ -2624,8 +2653,7 @@
             if (session.day_kwh) document.getElementById('roi_dayKwh').value = session.day_kwh;
             if (session.night_kwh) document.getElementById('roi_nightKwh').value = session.night_kwh;
             if (session.usage_source) roiSelectSplitMode(session.usage_source);
-            if (session.include_fit) document.getElementById('roi_includeFit').checked = true;
-            if (session.existing_solar) document.getElementById('roi_existingSolar').checked = true;
+            if (session.include_fit && document.getElementById('roi_includeFit')) document.getElementById('roi_includeFit').checked = true;
             if (session.assumption_id_fk) {
                 // restore advanced assumptions from session if needed
             }
@@ -2642,8 +2670,8 @@
             document.getElementById('roi_monthlyBill').value = '';
             document.getElementById('roi_monthlyKwh').value = '';
             document.getElementById('roi_billInferred').classList.add('d-none');
-            document.getElementById('roi_includeFit').checked = false;
-            document.getElementById('roi_existingSolar').checked = false;
+            if (document.getElementById('roi_includeFit')) document.getElementById('roi_includeFit').checked = false;
+            if (document.getElementById('roi_includeBattReplace')) document.getElementById('roi_includeBattReplace').checked = false;
             roiSelectSplitMode('default');
             roiSelectedProductIdx = -1;
             roiSelectedPlanIdx = -1;
@@ -2651,8 +2679,6 @@
             roiFinancingResults = [];
             var financeCards = document.getElementById('roi_financeCards');
             if (financeCards) financeCards.innerHTML = '';
-            var btnFin = document.getElementById('roi_btnToFinance');
-            if (btnFin) btnFin.disabled = true;
             var btnPres = document.getElementById('roi_btnToPresent');
             if (btnPres) btnPres.disabled = true;
             roiShowStep(1);
@@ -2865,6 +2891,14 @@
             roiScheduleAutoSave();
         }
 
+        function roiGoToFinancing() {
+            roiProcessCustomSystem();
+            // Only navigate if processing was successful
+            if (roiComparisonResults.length > 0 && roiSelectedProductIdx >= 0) {
+                roiShowStep(5);
+            }
+        }
+
         function roiProcessCustomSystem() {
             if (!roiBootstrap || typeof RoiCalc === 'undefined') {
                 alert('ข้อมูลไม่พร้อม กรุณารอสักครู่');
@@ -2884,6 +2918,14 @@
                 return;
             }
             
+            // Read battery replacement settings
+            var battLifeEl = document.getElementById('roi_batteryLife');
+            var battReplaceEl = document.getElementById('roi_includeBattReplace');
+            var battReplaceCostEl = document.getElementById('roi_batteryReplaceCost');
+            var batteryLifeYr = battLifeEl ? parseFloat(battLifeEl.value) || 10 : 10;
+            var includeBattReplace = battReplaceEl ? battReplaceEl.checked : false;
+            var batteryReplaceCostPerKwh = battReplaceCostEl ? parseFloat(battReplaceCostEl.value) || 8000 : 8000;
+            
             var customProduct = {
                 product_id: 'custom_' + Date.now(),
                 product_name: 'ระบบโซลาร์ ' + kwp + 'kWp' + (battery > 0 ? ' + แบตเตอรี่ ' + battery + 'kWh' : ''),
@@ -2902,18 +2944,78 @@
             // Apply roof ratio
             var roofEl = document.getElementById('roi_roofRatio');
             var roofRatio = roofEl ? parseFloat(roofEl.value) : 1;
-            if (roofRatio < 1 && assumptions.length > 0) {
+            
+            // Override assumptions with user-entered advanced settings
+            var pshEl = document.getElementById('roi_psh');
+            var prEl = document.getElementById('roi_pr');
+            var degEl = document.getElementById('roi_degradation');
+            var escEl = document.getElementById('roi_escalation');
+            
+            if (assumptions.length > 0) {
                 assumptions = assumptions.map(function (a) {
                     var copy = {};
                     for (var k in a) copy[k] = a[k];
-                    copy.peak_sun_hours = (Number(copy.peak_sun_hours) || 4.5) * roofRatio;
+                    if (pshEl) copy.peak_sun_hours = parseFloat(pshEl.value) || Number(copy.peak_sun_hours) || 4.5;
+                    if (roofRatio < 1) copy.peak_sun_hours = copy.peak_sun_hours * roofRatio;
+                    if (prEl) copy.performance_ratio = parseFloat(prEl.value) || Number(copy.performance_ratio) || 0.85;
+                    if (degEl) copy.panel_degradation_yr = (parseFloat(degEl.value) || 0.5) / 100;
+                    if (escEl) copy.electricity_escalation_yr = (parseFloat(escEl.value) || 3) / 100;
+                    copy.battery_life_yr = batteryLifeYr;
                     return copy;
                 });
+            } else {
+                // Create a default assumption from advanced inputs
+                assumptions = [{
+                    assumption_id: 'DEFAULT',
+                    peak_sun_hours: (pshEl ? parseFloat(pshEl.value) : 4.5) * roofRatio,
+                    performance_ratio: prEl ? parseFloat(prEl.value) : 0.85,
+                    panel_degradation_yr: degEl ? (parseFloat(degEl.value) || 0.5) / 100 : 0.005,
+                    electricity_escalation_yr: escEl ? (parseFloat(escEl.value) || 3) / 100 : 0.03,
+                    battery_life_yr: batteryLifeYr,
+                    system_life_yr: 25,
+                    battery_dod: 0.9,
+                    battery_round_trip: 0.92,
+                    discount_rate: 0.05,
+                    fit_price: 2.2,
+                    maintenance_yr: 3500
+                }];
+            }
+
+            // Store battery replacement info for the calc engine
+            if (includeBattReplace && battery > 0) {
+                session._batteryReplaceCost = batteryReplaceCostPerKwh * battery;
+                session._batteryLifeYr = batteryLifeYr;
+            } else {
+                session._batteryReplaceCost = 0;
+                session._batteryLifeYr = 0;
             }
 
             roiComparisonResults = RoiCalc.buildSystemComparison(session, [customProduct], assumptions, benchmarks);
-            roiSelectedProductIdx = 0; // We only have 1 product now
-            document.getElementById('roi_btnToFinance').disabled = false;
+            
+            // Apply battery replacement cost to cashflow if enabled
+            if (includeBattReplace && battery > 0 && roiComparisonResults.length > 0) {
+                var result = roiComparisonResults[0];
+                var replaceCost = batteryReplaceCostPerKwh * battery;
+                var life = result.inputs.systemLifeYr || 25;
+                for (var y = 0; y < result.cashflow.years.length; y++) {
+                    var yr = result.cashflow.years[y];
+                    if (yr.year === batteryLifeYr) {
+                        yr.cashflow -= replaceCost;
+                        yr.maintenance += replaceCost;
+                        yr.cumulative -= replaceCost;
+                        // Recompute cumulative from this point
+                        for (var z = y; z < result.cashflow.years.length; z++) {
+                            if (z === y) continue;
+                            result.cashflow.years[z].cumulative = result.cashflow.years[z-1].cumulative + result.cashflow.years[z].cashflow;
+                        }
+                        break;
+                    }
+                }
+                // Recalculate KPI after adjustment
+                result.kpi = RoiCalc.calcKpi(result.cashflow);
+            }
+            
+            roiSelectedProductIdx = 0;
             roiScheduleAutoSave();
         }
 
@@ -2989,23 +3091,88 @@
                 return;
             }
             
-            // Find closest product in database
-            var bestMatch = null;
-            var minDiff = 999999;
-            for (var i = 0; i < roiBootstrap.products.length; i++) {
-                var p = roiBootstrap.products[i];
-                var pKw = parseFloat(p.kWp || p.kwp) || 0;
+            // Strategy: Separate solar panel price and battery price using interpolation
+            var products = roiBootstrap.products;
+            
+            // 1. Estimate solar-only price from products (with similar or zero battery)
+            var solarProducts = [];
+            for (var i = 0; i < products.length; i++) {
+                var p = products[i];
+                var pKw = parseFloat(p.kWp || p.kwp || p.kw) || 0;
+                var pPrice = parseFloat(p.price) || 0;
                 var pBatt = parseFloat(p.battery_kwh || p.batteryKwh) || 0;
-                var diff = Math.abs(pKw - kwp)*2 + Math.abs(pBatt - batt); // Weight kWp more
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    bestMatch = p;
+                if (pKw > 0 && pPrice > 0) {
+                    solarProducts.push({ kw: pKw, price: pPrice, batt: pBatt });
                 }
             }
             
-            if (bestMatch && bestMatch.price > 0) {
-                window.roiSuggestedPrice = bestMatch.price;
-                document.getElementById('roi_priceSuggestionText').textContent = 'ราคาอ้างอิงในตลาด: ประมาณ ' + bestMatch.price.toLocaleString() + ' บาท';
+            if (solarProducts.length === 0) {
+                document.getElementById('roi_priceSuggestionWrap').style.display = 'none';
+                return;
+            }
+            
+            // Sort by kWp for interpolation
+            solarProducts.sort(function(a, b) { return a.kw - b.kw; });
+            
+            // Compute average per-kWp price (exclude battery cost if possible)
+            var totalPerKwp = 0;
+            var batteryPerKwh = 0;
+            var battCount = 0;
+            
+            // Try to estimate battery cost per kWh from products that have batteries
+            var withBatt = solarProducts.filter(function(p) { return p.batt > 0; });
+            var withoutBatt = solarProducts.filter(function(p) { return p.batt === 0; });
+            
+            if (withBatt.length > 0 && withoutBatt.length > 0) {
+                // If we have both types, try to isolate battery cost
+                var avgBattPricePerKwh = 0;
+                for (var b = 0; b < withBatt.length; b++) {
+                    // Find nearest without-battery product for comparison
+                    var nearest = withoutBatt.reduce(function(best, wob) {
+                        return Math.abs(wob.kw - withBatt[b].kw) < Math.abs(best.kw - withBatt[b].kw) ? wob : best;
+                    });
+                    var battCost = withBatt[b].price - (nearest.price / nearest.kw * withBatt[b].kw);
+                    if (battCost > 0 && withBatt[b].batt > 0) {
+                        avgBattPricePerKwh += battCost / withBatt[b].batt;
+                        battCount++;
+                    }
+                }
+                if (battCount > 0) batteryPerKwh = avgBattPricePerKwh / battCount;
+            }
+            
+            // If no good battery estimate, use 8000 baht/kWh as default
+            if (batteryPerKwh <= 0) batteryPerKwh = 8000;
+            
+            // Interpolate solar price for the target kWp
+            var estimatedSolarPrice = 0;
+            if (kwp > 0) {
+                if (kwp <= solarProducts[0].kw) {
+                    // Below min: use per-kWp rate of smallest
+                    estimatedSolarPrice = (solarProducts[0].price / solarProducts[0].kw) * kwp;
+                } else if (kwp >= solarProducts[solarProducts.length - 1].kw) {
+                    // Above max: use per-kWp rate of largest
+                    var last = solarProducts[solarProducts.length - 1];
+                    estimatedSolarPrice = (last.price / last.kw) * kwp;
+                } else {
+                    // Interpolate between two nearest products
+                    for (var j = 0; j < solarProducts.length - 1; j++) {
+                        if (kwp >= solarProducts[j].kw && kwp <= solarProducts[j + 1].kw) {
+                            var low = solarProducts[j];
+                            var high = solarProducts[j + 1];
+                            var ratio = (kwp - low.kw) / (high.kw - low.kw);
+                            estimatedSolarPrice = low.price + (high.price - low.price) * ratio;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            var estimatedBattPrice = batt * batteryPerKwh;
+            var totalEstimate = Math.round((estimatedSolarPrice + estimatedBattPrice) / 1000) * 1000;
+            
+            if (totalEstimate > 0) {
+                window.roiSuggestedPrice = totalEstimate;
+                document.getElementById('roi_priceSuggestionText').textContent = 'ราคาอ้างอิงในตลาด: ประมาณ ' + totalEstimate.toLocaleString() + ' บาท';
                 document.getElementById('roi_priceSuggestionWrap').style.display = 'block';
             } else {
                 document.getElementById('roi_priceSuggestionWrap').style.display = 'none';
@@ -3182,8 +3349,8 @@
                 monthly_bill: parseFloat(document.getElementById('roi_monthlyBill').value) || 0,
                 monthly_kwh: parseFloat(document.getElementById('roi_monthlyKwh').value) || 0,
                 usage_source: roiSplitMode,
-                include_fit: document.getElementById('roi_includeFit').checked,
-                existing_solar: document.getElementById('roi_existingSolar').checked,
+                include_fit: !!(document.getElementById('roi_includeFit') && document.getElementById('roi_includeFit').checked),
+                existing_solar: !!(document.getElementById('roi_existingSolar') && document.getElementById('roi_existingSolar').checked),
                 selected_rank_strategy: rankStrategy ? rankStrategy.value : 'net',
                 selected_down_percent: parseFloat(document.getElementById('roi_downPercent').value) || 0,
                 want_tax_deduction: !!(document.getElementById('roi_wantTaxDeduct') && document.getElementById('roi_wantTaxDeduct').checked),
